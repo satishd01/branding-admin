@@ -17,11 +17,11 @@ import Icon from "@mui/material/Icon";
 const routes = [
   {
     type: "collapse",
-    name: "Dashboard",
-    key: "dashboard",
-    icon: <Icon fontSize="small">dashboard</Icon>,
-    route: "/dashboard",
-    component: <Dashboard />,
+    name: "Analytics",
+    key: "analytics",
+    icon: <Icon fontSize="small">bar_chart</Icon>,
+    route: "/analytics",
+    component: <Analytics />,
   },
   {
     type: "collapse",
@@ -54,14 +54,6 @@ const routes = [
     icon: <Icon fontSize="small">trending_up</Icon>,
     route: "/dynamic-pricing",
     component: <DynamicPricing />,
-  },
-  {
-    type: "collapse",
-    name: "Analytics",
-    key: "analytics",
-    icon: <Icon fontSize="small">bar_chart</Icon>,
-    route: "/analytics",
-    component: <Analytics />,
   },
   // {
   //   type: "collapse",
