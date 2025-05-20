@@ -68,7 +68,7 @@ function Basic() {
         setSnackbarSeverity("success");
         setOpenSnackbar(true);
 
-        setTimeout(() => navigate("/dashboard"), 2000);
+        setTimeout(() => navigate("/analytics"), 2000);
       } else {
         setErrorMessage(data.message);
         setSnackbarMessage(data.message);
