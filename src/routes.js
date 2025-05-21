@@ -9,6 +9,9 @@ import Promotions from "layouts/tables/promotion";
 import Disputes from "layouts/tables/dispute";
 import Disputemanagement from "layouts/tables/dispute";
 import DynamicPricing from "layouts/tables/dynamic-pricing";
+import Banner from "layouts/tables/banners";
+import Notifications from "layouts/tables/notifications";
+import Content from "layouts/tables/content";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -47,22 +50,46 @@ const routes = [
     route: "/promotions",
     component: <Promotions />,
   },
-  {
-    type: "collapse",
-    name: "Dynamic Pricing",
-    key: "dynamic-pricing",
-    icon: <Icon fontSize="small">trending_up</Icon>,
-    route: "/dynamic-pricing",
-    component: <DynamicPricing />,
-  },
   // {
   //   type: "collapse",
-  //   name: "Disputes",
-  //   key: "disputes",
-  //   icon: <Icon fontSize="small">report</Icon>,
-  //   route: "/disputes",
-  //   component: <Disputemanagement />,
+  //   name: "Dynamic Pricing",
+  //   key: "dynamic-pricing",
+  //   icon: <Icon fontSize="small">trending_up</Icon>,
+  //   route: "/dynamic-pricing",
+  //   component: <DynamicPricing />,
   // },
+  {
+    type: "collapse",
+    name: "Banners",
+    key: "banners",
+    icon: <Icon fontSize="small">image</Icon>,
+    route: "/banners",
+    component: <Banner />,
+  },
+  {
+    type: "collapse",
+    name: "Disputes",
+    key: "disputes",
+    icon: <Icon fontSize="small">report</Icon>,
+    route: "/disputes",
+    component: <Disputemanagement />,
+  },
+  {
+    type: "collapse",
+    name: "Notifications",
+    key: "notifications",
+    icon: <Icon fontSize="small">notifications</Icon>,
+    route: "/notifications",
+    component: <Notifications />,
+  },
+  {
+    type: "collapse",
+    name: "Content",
+    key: "content",
+    icon: <Icon fontSize="small">description</Icon>,
+    route: "/content",
+    component: <Content />,
+  },
   {
     route: "/authentication/sign-in",
     component: <SignIn />,
