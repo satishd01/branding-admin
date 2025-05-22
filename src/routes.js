@@ -12,9 +12,11 @@ import DynamicPricing from "layouts/tables/dynamic-pricing";
 import Banner from "layouts/tables/banners";
 import Notifications from "layouts/tables/notifications";
 import Content from "layouts/tables/content";
+import Rating from "layouts/tables/ratings";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
+// import { Rating } from "@mui/material";
 
 // Define routes
 const routes = [
@@ -81,6 +83,14 @@ const routes = [
     icon: <Icon fontSize="small">notifications</Icon>,
     route: "/notifications",
     component: <Notifications />,
+  },
+  {
+    type: "collapse",
+    name: "Rating",
+    key: "rating",
+    icon: <Icon fontSize="small">star</Icon>,
+    route: "/rating",
+    component: <Rating />,
   },
   {
     type: "collapse",

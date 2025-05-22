@@ -47,6 +47,8 @@ import Alert from "@mui/material/Alert";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://traveller-api.synoventum.site";
 
+// Actions column cell (moved inside Banners for handler access)
+
 function Banners() {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -90,6 +92,7 @@ function Banners() {
     startDate: "",
     endDate: "",
   });
+  const [uploading, setUploading] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -145,6 +148,44 @@ function Banners() {
       showSnackbar("Error fetching banners", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (files) => {
+    try {
+      setUploading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showSnackbar("No token found, please login again", "error");
+        navigate("/authentication/sign-in");
+        return null;
+      }
+
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+
+      const response = await fetch(`${BASE_URL}/v1/files/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload files");
+      }
+
+      const data = await response.json();
+      return data.data.files;
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      showSnackbar(error.message || "Error uploading files", "error");
+      return null;
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -205,10 +246,6 @@ function Banners() {
           endDate: editData.endDate ? `${editData.endDate}T23:59:59Z` : null,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to update banner");
-      }
 
       showSnackbar("Banner updated successfully");
       setOpenEditDialog(false);
@@ -300,62 +337,178 @@ function Banners() {
       showSnackbar(error.message || "Error creating banner", "error");
     }
   };
-
-  const getStatusChip = (status) => {
-    switch (status) {
-      case "active":
-        return <Chip label="Active" color="success" size="small" icon={<CheckCircleIcon />} />;
-      case "inactive":
-        return <Chip label="Inactive" color="warning" size="small" icon={<CancelIcon />} />;
-      case "expired":
-        return <Chip label="Expired" color="error" size="small" icon={<EventBusyIcon />} />;
-      default:
-        return <Chip label={status} size="small" />;
-    }
-  };
-
-  const getTypeChip = (type) => {
+  // Helper to render a Chip for banner type
+  function getTypeChip(type) {
+    let color = "default";
+    let label = type;
     switch (type) {
       case "home":
-        return <Chip label="Home" color="primary" size="small" />;
+        color = "primary";
+        label = "Home";
+        break;
       case "promo":
-        return <Chip label="Promo" color="secondary" size="small" />;
+        color = "success";
+        label = "Promo";
+        break;
       case "category":
-        return <Chip label="Category" color="info" size="small" />;
+        color = "info";
+        label = "Category";
+        break;
       default:
-        return <Chip label={type} size="small" />;
+        color = "default";
+        label = type;
     }
-  };
+    return <Chip label={label} color={color} size="small" />;
+  }
 
-  const getPositionChip = (position) => {
+  // Helper to render a Chip for banner position
+  function getPositionChip(position) {
+    let color = "default";
+    let label = position;
     switch (position) {
       case "top":
-        return <Chip label="Top" color="success" size="small" />;
+        color = "primary";
+        label = "Top";
+        break;
       case "middle":
-        return <Chip label="Middle" color="warning" size="small" />;
+        color = "secondary";
+        label = "Middle";
+        break;
       case "bottom":
-        return <Chip label="Bottom" color="info" size="small" />;
+        color = "info";
+        label = "Bottom";
+        break;
       default:
-        return <Chip label={position} size="small" />;
+        color = "default";
+        label = position;
     }
+    return <Chip label={label} color={color} size="small" />;
+  }
+
+  // Helper to render a Chip for banner status
+  function getStatusChip(status) {
+    let color = "default";
+    let label = status;
+    switch (status) {
+      case "active":
+        color = "success";
+        label = "Active";
+        break;
+      case "inactive":
+        color = "warning";
+        label = "Inactive";
+        break;
+      case "expired":
+        color = "error";
+        label = "Expired";
+        break;
+      default:
+        color = "default";
+        label = status;
+    }
+    return <Chip label={label} color={color} size="small" />;
+  }
+  // Actions column cell component
+  function ActionsColumnCell({ row, onView, onEdit, onDelete }) {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuOpen = (event) => {
+      setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+      setAnchorEl(null);
+    };
+
+    return (
+      <>
+        <IconButton
+          aria-label="more"
+          aria-controls="actions-menu"
+          aria-haspopup="true"
+          onClick={handleMenuOpen}
+          size="small"
+        >
+          <MoreVertIcon />
+        </IconButton>
+        <Menu
+          id="actions-menu"
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleMenuClose}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "right",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+        >
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              onView(row.original);
+            }}
+          >
+            <ListItemIcon>
+              <VisibilityIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="View" />
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              onEdit(row.original);
+            }}
+          >
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Edit" />
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              onDelete(row.original.id);
+            }}
+          >
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Delete" />
+          </MenuItem>
+        </Menu>
+      </>
+    );
+  }
+
+  ActionsColumnCell.propTypes = {
+    row: PropTypes.shape({
+      original: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      }).isRequired,
+    }).isRequired,
+    onView: PropTypes.func.isRequired,
+    onEdit: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired,
   };
 
-  const DateCell = ({ value }) => new Date(value).toLocaleDateString();
-  DateCell.propTypes = {
-    value: PropTypes.string.isRequired,
-  };
-
-  const ImageCell = ({ value }) => (
-    <Avatar src={value} variant="square" sx={{ width: 56, height: 56 }} alt="Banner Image" />
-  );
-  ImageCell.propTypes = {
-    value: PropTypes.string.isRequired,
-  };
-
+  // Define columns for DataTable
   const columns = [
-    { Header: "ID", accessor: "id" },
-    { Header: "Image", accessor: "imageUrl", Cell: ImageCell },
-    { Header: "Title", accessor: "title" },
+    {
+      Header: "ID",
+      accessor: "id",
+    },
+    {
+      Header: "Title",
+      accessor: "title",
+    },
+    {
+      Header: "Description",
+      accessor: "description",
+    },
     {
       Header: "Type",
       accessor: "type",
@@ -374,96 +527,24 @@ function Banners() {
     {
       Header: "Start Date",
       accessor: "startDate",
-      Cell: DateCell,
+      Cell: ({ value }) => (value ? new Date(value).toLocaleDateString() : "N/A"),
     },
     {
       Header: "End Date",
       accessor: "endDate",
-      Cell: DateCell,
+      Cell: ({ value }) => (value ? new Date(value).toLocaleDateString() : "N/A"),
     },
     {
       Header: "Actions",
       accessor: "actions",
-      Cell: ({ row }) => {
-        const [anchorEl, setAnchorEl] = useState(null);
-        const open = Boolean(anchorEl);
-
-        const handleClick = (event) => {
-          setAnchorEl(event.currentTarget);
-        };
-
-        const handleClose = () => {
-          setAnchorEl(null);
-        };
-
-        return (
-          <Box>
-            <Tooltip title="View Details">
-              <IconButton onClick={() => handleViewBanner(row.original)}>
-                <VisibilityIcon color="info" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="More actions">
-              <IconButton
-                onClick={handleClick}
-                aria-controls={open ? "actions-menu" : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? "true" : undefined}
-              >
-                <MoreVertIcon />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              anchorEl={anchorEl}
-              id="actions-menu"
-              open={open}
-              onClose={handleClose}
-              onClick={handleClose}
-              PaperProps={{
-                elevation: 0,
-                sx: {
-                  overflow: "visible",
-                  filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-                  mt: 1.5,
-                  "& .MuiAvatar-root": {
-                    width: 32,
-                    height: 32,
-                    ml: -0.5,
-                    mr: 1,
-                  },
-                  "&:before": {
-                    content: '""',
-                    display: "block",
-                    position: "absolute",
-                    top: 0,
-                    right: 14,
-                    width: 10,
-                    height: 10,
-                    bgcolor: "background.paper",
-                    transform: "translateY(-50%) rotate(45deg)",
-                    zIndex: 0,
-                  },
-                },
-              }}
-              transformOrigin={{ horizontal: "right", vertical: "top" }}
-              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-            >
-              <MenuItem onClick={() => handleOpenEditDialog(row.original)}>
-                <ListItemIcon>
-                  <EditIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Edit</ListItemText>
-              </MenuItem>
-              <MenuItem onClick={() => handleOpenDeleteDialog(row.original.id)}>
-                <ListItemIcon>
-                  <DeleteIcon fontSize="small" color="error" />
-                </ListItemIcon>
-                <ListItemText>Delete</ListItemText>
-              </MenuItem>
-            </Menu>
-          </Box>
-        );
-      },
+      Cell: (cellProps) => (
+        <ActionsColumnCell
+          {...cellProps}
+          onView={handleViewBanner}
+          onEdit={handleOpenEditDialog}
+          onDelete={handleOpenDeleteDialog}
+        />
+      ),
     },
   ];
 
@@ -661,7 +742,11 @@ function Banners() {
                   <Grid item xs={12}>
                     <MDTypography>
                       <strong>Image URL:</strong>{" "}
-                      <a href={viewBannerData.imageUrl} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={`${BASE_URL}/${viewBannerData.imageUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         {viewBannerData.imageUrl}
                       </a>
                     </MDTypography>
@@ -669,7 +754,7 @@ function Banners() {
                   <Grid item xs={12}>
                     <Box display="flex" justifyContent="center" my={2}>
                       <Avatar
-                        src={viewBannerData.imageUrl}
+                        src={`${BASE_URL}/${viewBannerData.imageUrl}`}
                         variant="square"
                         sx={{ width: "100%", maxWidth: 400, height: "auto" }}
                         alt="Banner Image"
@@ -763,6 +848,41 @@ function Banners() {
                   onChange={(e) => setEditData({ ...editData, imageUrl: e.target.value })}
                   required
                 />
+              </Grid>
+              <Grid item xs={12}>
+                <input
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  id="edit-banner-upload"
+                  type="file"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (files.length > 0) {
+                      const uploadedFiles = await handleFileUpload(files);
+                      if (uploadedFiles && uploadedFiles.length > 0) {
+                        setEditData({
+                          ...editData,
+                          imageUrl: uploadedFiles[0].path,
+                        });
+                      }
+                    }
+                  }}
+                />
+                <label htmlFor="edit-banner-upload">
+                  <Button variant="contained" component="span" startIcon={<AddIcon />}>
+                    Upload New Image
+                  </Button>
+                </label>
+                {editData.imageUrl && (
+                  <Box mt={2}>
+                    <Avatar
+                      src={`${BASE_URL}/${editData.imageUrl}`}
+                      variant="square"
+                      sx={{ width: 200, height: 100 }}
+                      alt="Banner Preview"
+                    />
+                  </Box>
+                )}
               </Grid>
               <Grid item xs={12}>
                 <TextField
@@ -926,6 +1046,42 @@ function Banners() {
                 />
               </Grid>
               <Grid item xs={12}>
+                <input
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  id="create-banner-upload"
+                  type="file"
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (files.length > 0) {
+                      const uploadedFiles = await handleFileUpload(files);
+                      if (uploadedFiles && uploadedFiles.length > 0) {
+                        setNewBanner({
+                          ...newBanner,
+                          imageUrl: uploadedFiles[0].path,
+                        });
+                      }
+                    }
+                  }}
+                />
+                <label htmlFor="create-banner-upload">
+                  <Button variant="contained" component="span" startIcon={<AddIcon />}>
+                    Upload Image
+                  </Button>
+                </label>
+                {uploading && <CircularProgress size={24} />}
+                {newBanner.imageUrl && (
+                  <Box mt={2}>
+                    <Avatar
+                      src={`${BASE_URL}/${newBanner.imageUrl}`}
+                      variant="square"
+                      sx={{ width: 200, height: 100 }}
+                      alt="Banner Preview"
+                    />
+                  </Box>
+                )}
+              </Grid>
+              <Grid item xs={12}>
                 <TextField
                   label="Description"
                   fullWidth
@@ -1023,41 +1179,9 @@ function Banners() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-
       <Footer />
     </DashboardLayout>
   );
 }
-
-Banners.propTypes = {
-  row: PropTypes.shape({
-    original: PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      title: PropTypes.string.isRequired,
-      imageUrl: PropTypes.string.isRequired,
-      description: PropTypes.string,
-      link: PropTypes.string,
-      type: PropTypes.string.isRequired,
-      position: PropTypes.string.isRequired,
-      status: PropTypes.string.isRequired,
-      startDate: PropTypes.string.isRequired,
-      endDate: PropTypes.string.isRequired,
-      created_at: PropTypes.string.isRequired,
-      updated_at: PropTypes.string,
-    }).isRequired,
-  }).isRequired,
-};
 
 export default Banners;
