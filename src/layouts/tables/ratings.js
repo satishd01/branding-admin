@@ -5,20 +5,15 @@ import {
   Divider,
   Box,
   CircularProgress,
-  MenuItem,
-  Select,
   FormControl,
   InputLabel,
+  Select,
+  MenuItem,
   TablePagination,
-  Menu,
-  ListItemIcon,
-  ListItemText,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Button,
   Snackbar,
   Alert,
@@ -26,6 +21,7 @@ import {
   Card,
   Rating,
   Avatar,
+  TextField,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import PropTypes from "prop-types";
@@ -35,14 +31,8 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CloseIcon from "@mui/icons-material/Close";
-import EditIcon from "@mui/icons-material/Edit";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
 import StarIcon from "@mui/icons-material/Star";
 import PersonIcon from "@mui/icons-material/Person";
 
@@ -51,9 +41,7 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://traveller-api.sy
 function Ratings() {
   const theme = useTheme();
   const [ratings, setRatings] = useState([]);
-  const [rides, setRides] = useState([]); // New state for rides
   const [loading, setLoading] = useState(true);
-  const [ridesLoading, setRidesLoading] = useState(false); // Loading state for rides
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [snackbar, setSnackbar] = useState({
@@ -63,12 +51,6 @@ function Ratings() {
   });
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [viewRatingData, setViewRatingData] = useState(null);
-  const [openCreateDialog, setOpenCreateDialog] = useState(false);
-  const [newRatingData, setNewRatingData] = useState({
-    createdRideId: "",
-    rating: 0,
-    review: "",
-  });
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -76,7 +58,6 @@ function Ratings() {
 
   useEffect(() => {
     fetchRatings();
-    fetchRides(); // Fetch rides when component mounts
   }, [ratingFilter]);
 
   const showSnackbar = (message, severity = "success") => {
@@ -102,7 +83,9 @@ function Ratings() {
       }
 
       const response = await fetch(url, {
+        method: "GET",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
@@ -112,43 +95,13 @@ function Ratings() {
       }
 
       const data = await response.json();
-      setRatings(data.data);
+      setRatings(data.data.ratings);
       setPage(0); // Reset to first page when data changes
     } catch (error) {
       console.error("Error fetching ratings:", error);
       showSnackbar("Error fetching ratings", "error");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // New function to fetch rides
-  const fetchRides = async () => {
-    try {
-      setRidesLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        showSnackbar("No token found, please login again", "error");
-        return;
-      }
-
-      const response = await fetch(`${BASE_URL}/v1/admin/rides?type=ride&status=completed`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch rides");
-      }
-
-      const data = await response.json();
-      setRides(data.data);
-    } catch (error) {
-      console.error("Error fetching rides:", error);
-      showSnackbar("Error fetching rides", "error");
-    } finally {
-      setRidesLoading(false);
     }
   };
 
@@ -161,7 +114,9 @@ function Ratings() {
       }
 
       const response = await fetch(`${BASE_URL}/v1/ratings/get/${id}`, {
+        method: "GET",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
@@ -181,72 +136,6 @@ function Ratings() {
 
   const handleViewRating = (rating) => {
     fetchRatingById(rating.id);
-  };
-
-  const handleOpenCreateDialog = () => {
-    setNewRatingData({
-      createdRideId: "",
-      rating: 0,
-      review: "",
-    });
-    setOpenCreateDialog(true);
-  };
-
-  const handleCreateRating = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        showSnackbar("No token found, please login again", "error");
-        return;
-      }
-
-      const response = await fetch(`${BASE_URL}/v1/ratings`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newRatingData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create rating");
-      }
-
-      showSnackbar("Rating created successfully");
-      setOpenCreateDialog(false);
-      fetchRatings();
-    } catch (error) {
-      console.error("Error creating rating:", error);
-      showSnackbar(error.message || "Error creating rating", "error");
-    }
-  };
-
-  const handleDeleteRating = async (id) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        showSnackbar("No token found, please login again", "error");
-        return;
-      }
-
-      const response = await fetch(`${BASE_URL}/v1/ratings/delete/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete rating");
-      }
-
-      showSnackbar("Rating deleted successfully");
-      fetchRatings();
-    } catch (error) {
-      console.error("Error deleting rating:", error);
-      showSnackbar(error.message || "Error deleting rating", "error");
-    }
   };
 
   const formatDate = (dateString) => {
@@ -323,80 +212,13 @@ function Ratings() {
     {
       Header: "Actions",
       accessor: "actions",
-      Cell: ({ row }) => {
-        const [anchorEl, setAnchorEl] = useState(null);
-        const open = Boolean(anchorEl);
-
-        const handleClick = (event) => {
-          setAnchorEl(event.currentTarget);
-        };
-
-        const handleClose = () => {
-          setAnchorEl(null);
-        };
-
-        return (
-          <Box>
-            <Tooltip title="View Details">
-              <IconButton onClick={() => handleViewRating(row.original)}>
-                <VisibilityIcon color="info" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="More actions">
-              <IconButton
-                onClick={handleClick}
-                aria-controls={open ? "actions-menu" : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? "true" : undefined}
-              >
-                <MoreVertIcon />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              anchorEl={anchorEl}
-              id="actions-menu"
-              open={open}
-              onClose={handleClose}
-              onClick={handleClose}
-              PaperProps={{
-                elevation: 0,
-                sx: {
-                  overflow: "visible",
-                  filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-                  mt: 1.5,
-                  "& .MuiAvatar-root": {
-                    width: 32,
-                    height: 32,
-                    ml: -0.5,
-                    mr: 1,
-                  },
-                  "&:before": {
-                    content: '""',
-                    display: "block",
-                    position: "absolute",
-                    top: 0,
-                    right: 14,
-                    width: 10,
-                    height: 10,
-                    bgcolor: "background.paper",
-                    transform: "translateY(-50%) rotate(45deg)",
-                    zIndex: 0,
-                  },
-                },
-              }}
-              transformOrigin={{ horizontal: "right", vertical: "top" }}
-              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-            >
-              <MenuItem onClick={() => handleDeleteRating(row.original.id)}>
-                <ListItemIcon>
-                  <DeleteIcon fontSize="small" color="error" />
-                </ListItemIcon>
-                <ListItemText>Delete</ListItemText>
-              </MenuItem>
-            </Menu>
-          </Box>
-        );
-      },
+      Cell: ({ row }) => (
+        <Tooltip title="View Details">
+          <IconButton onClick={() => handleViewRating(row.original)}>
+            <VisibilityIcon color="info" />
+          </IconButton>
+        </Tooltip>
+      ),
     },
   ];
 
@@ -419,7 +241,7 @@ function Ratings() {
     page * rowsPerPage + rowsPerPage
   );
 
-  if (loading || ridesLoading) {
+  if (loading) {
     return (
       <DashboardLayout>
         <DashboardNavbar />
@@ -489,14 +311,6 @@ function Ratings() {
                         },
                       }}
                     />
-                    <Button
-                      variant="contained"
-                      color="info"
-                      startIcon={<AddIcon />}
-                      onClick={handleOpenCreateDialog}
-                    >
-                      Add Rating
-                    </Button>
                   </MDBox>
                 </MDBox>
               </MDBox>
@@ -615,76 +429,6 @@ function Ratings() {
         <DialogActions>
           <Button onClick={() => setOpenViewDialog(false)} variant="contained" color="error">
             Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Create Rating Dialog */}
-      <Dialog
-        open={openCreateDialog}
-        onClose={() => setOpenCreateDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <MDBox display="flex" justifyContent="space-between" alignItems="center">
-            <MDTypography variant="h5">Add New Rating</MDTypography>
-            <IconButton onClick={() => setOpenCreateDialog(false)}>
-              <CloseIcon />
-            </IconButton>
-          </MDBox>
-        </DialogTitle>
-        <DialogContent dividers>
-          <MDBox mb={3}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Ride</InputLabel>
-                  <Select
-                    value={newRatingData.createdRideId}
-                    onChange={(e) =>
-                      setNewRatingData({ ...newRatingData, createdRideId: e.target.value })
-                    }
-                    label="Ride"
-                  >
-                    {rides.map((ride) => (
-                      <MenuItem key={ride.id} value={ride.id}>
-                        Ride #{ride.id} - {ride.pickupLocation} to {ride.dropoffLocation}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <MDTypography component="legend">Rating</MDTypography>
-                <Rating
-                  value={newRatingData.rating}
-                  onChange={(event, newValue) => {
-                    setNewRatingData({ ...newRatingData, rating: newValue });
-                  }}
-                  precision={0.5}
-                  size="large"
-                  emptyIcon={<StarIcon style={{ opacity: 0.55 }} fontSize="inherit" />}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  margin="normal"
-                  label="Review (Optional)"
-                  multiline
-                  rows={4}
-                  value={newRatingData.review}
-                  onChange={(e) => setNewRatingData({ ...newRatingData, review: e.target.value })}
-                />
-              </Grid>
-            </Grid>
-          </MDBox>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateRating} color="primary" variant="contained">
-            Add Rating
           </Button>
         </DialogActions>
       </Dialog>

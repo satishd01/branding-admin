@@ -13,6 +13,7 @@ import Banner from "layouts/tables/banners";
 import Notifications from "layouts/tables/notifications";
 import Content from "layouts/tables/content";
 import Rating from "layouts/tables/ratings";
+import AdminUsers from "layouts/tables/admin";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -36,6 +37,22 @@ const routes = [
     route: "/users",
     component: <Hosts />,
   },
+  {
+    type: "collapse",
+    name: "Admin Users",
+    key: "admin-users",
+    icon: <Icon fontSize="small">admin_panel_settings</Icon>,
+    route: "/admin-users",
+    component: <AdminUsers />,
+  },
+  // {
+  //   type: "collapse",
+  //   name: "Vendors",
+  //   key: "vendors",
+  //   icon: <Icon fontSize="small">store</Icon>,
+  //   route: "/vendors",
+  //   component: <Vendors />,
+  // },
   {
     type: "collapse",
     name: "Rides",
