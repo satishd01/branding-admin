@@ -21,6 +21,9 @@ import {
   Card,
   Rating,
   Avatar,
+  Typography,
+  Chip,
+  Paper,
   TextField,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -35,6 +38,12 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import CloseIcon from "@mui/icons-material/Close";
 import StarIcon from "@mui/icons-material/Star";
 import PersonIcon from "@mui/icons-material/Person";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import EventIcon from "@mui/icons-material/Event";
+import ScheduleIcon from "@mui/icons-material/Schedule";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import PhoneIcon from "@mui/icons-material/Phone";
+import EmailIcon from "@mui/icons-material/Email";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://traveller-api.synoventum.site";
 
@@ -135,7 +144,7 @@ function Ratings() {
   };
 
   const handleViewRating = (rating) => {
-    fetchRatingById(rating.id);
+    fetchRatingById(rating.rating.id);
   };
 
   const formatDate = (dateString) => {
@@ -171,7 +180,7 @@ function Ratings() {
 
   const UserCell = ({ value }) => (
     <Box display="flex" alignItems="center">
-      <Avatar sx={{ width: 32, height: 32, mr: 1 }}>
+      <Avatar src={value?.profilePhoto} sx={{ width: 32, height: 32, mr: 1 }}>
         {value?.name ? value.name.charAt(0) : <PersonIcon />}
       </Avatar>
       <Box>
@@ -189,25 +198,38 @@ function Ratings() {
     value: PropTypes.shape({
       name: PropTypes.string,
       email: PropTypes.string,
+      profilePhoto: PropTypes.string,
     }),
   };
 
   const columns = [
-    { Header: "ID", accessor: "id" },
+    { Header: "ID", accessor: (row) => row.rating.id },
     {
       Header: "User",
-      accessor: "User",
-      Cell: UserCell,
+      accessor: "user",
+      Cell: ({ value }) => <UserCell value={value} />,
     },
-    { Header: "Ride ID", accessor: "createdRideId" },
+    {
+      Header: "Ride",
+      accessor: (row) =>
+        `#${row.rideCreation.id}: ${row.rideCreation.pickupAddress} → ${row.rideCreation.dropAddress}`,
+      Cell: ({ value }) => (
+        <MDTypography
+          variant="caption"
+          sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}
+        >
+          {value}
+        </MDTypography>
+      ),
+    },
     {
       Header: "Rating",
-      accessor: "rating",
+      accessor: (row) => row.rating.rating,
       Cell: ({ value }) => renderRatingStars(value),
     },
     {
       Header: "Date",
-      accessor: (row) => formatDate(row.createdAt),
+      accessor: (row) => formatDate(row.rating.createdAt),
     },
     {
       Header: "Actions",
@@ -226,11 +248,14 @@ function Ratings() {
     ? ratings.filter((rating) => {
         const searchTermLower = searchTerm.toLowerCase();
         return (
-          (rating.id && rating.id.toString().includes(searchTermLower)) ||
-          (rating.User?.name && rating.User.name.toLowerCase().includes(searchTermLower)) ||
-          (rating.User?.email && rating.User.email.toLowerCase().includes(searchTermLower)) ||
-          (rating.createdRideId && rating.createdRideId.toString().includes(searchTermLower)) ||
-          (rating.review && rating.review.toLowerCase().includes(searchTermLower))
+          (rating.rating.id && rating.rating.id.toString().includes(searchTermLower)) ||
+          (rating.user?.name && rating.user.name.toLowerCase().includes(searchTermLower)) ||
+          (rating.user?.email && rating.user.email.toLowerCase().includes(searchTermLower)) ||
+          (rating.rideCreation?.pickupAddress &&
+            rating.rideCreation.pickupAddress.toLowerCase().includes(searchTermLower)) ||
+          (rating.rideCreation?.dropAddress &&
+            rating.rideCreation.dropAddress.toLowerCase().includes(searchTermLower)) ||
+          (rating.rating.review && rating.rating.review.toLowerCase().includes(searchTermLower))
         );
       })
     : [];
@@ -356,29 +381,23 @@ function Ratings() {
         <DialogContent dividers>
           {viewRatingData && (
             <MDBox>
+              {/* Rating Information */}
               <MDBox mb={3}>
                 <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
-                  Basic Information
+                  Rating Information
                 </MDTypography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>ID:</strong> {viewRatingData.id}
+                      <strong>Rating ID:</strong> {viewRatingData.rating.id}
+                    </MDTypography>
+                    <MDTypography>
+                      <strong>Rating:</strong> {renderRatingStars(viewRatingData.rating.rating)}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>Ride ID:</strong> {viewRatingData.createdRideId}
-                    </MDTypography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDTypography>
-                      <strong>Rating:</strong> {renderRatingStars(viewRatingData.rating)}
-                    </MDTypography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDTypography>
-                      <strong>Date:</strong> {formatDate(viewRatingData.createdAt)}
+                      <strong>Date:</strong> {formatDate(viewRatingData.rating.createdAt)}
                     </MDTypography>
                   </Grid>
                 </Grid>
@@ -386,42 +405,159 @@ function Ratings() {
 
               <Divider sx={{ my: 2 }} />
 
+              {/* Ride Information */}
+              <MDBox mb={3}>
+                <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                  Ride Information
+                </MDTypography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <LocationOnIcon color="primary" sx={{ mr: 1 }} />
+                      <MDTypography>
+                        <strong>Pickup:</strong> {viewRatingData.rideCreation.pickupAddress}
+                      </MDTypography>
+                    </Box>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <LocationOnIcon color="secondary" sx={{ mr: 1 }} />
+                      <MDTypography>
+                        <strong>Dropoff:</strong> {viewRatingData.rideCreation.dropAddress}
+                      </MDTypography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <EventIcon color="action" sx={{ mr: 1 }} />
+                      <MDTypography>
+                        <strong>Date:</strong> {viewRatingData.rideCreation.date}
+                      </MDTypography>
+                    </Box>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <ScheduleIcon color="action" sx={{ mr: 1 }} />
+                      <MDTypography>
+                        <strong>Time:</strong> {viewRatingData.rideCreation.time}
+                      </MDTypography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <DirectionsCarIcon color="action" sx={{ mr: 1 }} />
+                      <MDTypography>
+                        <strong>Vehicle:</strong> {viewRatingData.host.vehicleBrand}{" "}
+                        {viewRatingData.host.vehicleModel} ({viewRatingData.host.vehicleNumber})
+                      </MDTypography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </MDBox>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* User Information */}
               <MDBox mb={3}>
                 <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
                   User Information
                 </MDTypography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <MDTypography>
-                      <strong>Name:</strong> {viewRatingData.User?.name || "N/A"}
-                    </MDTypography>
+                <Paper elevation={0} sx={{ p: 2, mb: 2, backgroundColor: "#f5f5f5" }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Box display="flex" alignItems="center" mb={2}>
+                        <Avatar
+                          src={viewRatingData.user.profilePhoto}
+                          sx={{ width: 56, height: 56, mr: 2 }}
+                        >
+                          {viewRatingData.user.name?.charAt(0) || <PersonIcon />}
+                        </Avatar>
+                        <Box>
+                          <MDTypography variant="h6">{viewRatingData.user.name}</MDTypography>
+                          <MDTypography variant="body2" color="textSecondary">
+                            User ID: {viewRatingData.user.id}
+                          </MDTypography>
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <PhoneIcon color="action" sx={{ mr: 1 }} />
+                        <MDTypography>{viewRatingData.user.phoneNumber || "N/A"}</MDTypography>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <EmailIcon color="action" sx={{ mr: 1 }} />
+                        <MDTypography>{viewRatingData.user.email || "N/A"}</MDTypography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <MDTypography variant="subtitle2" gutterBottom>
+                        <strong>Address:</strong>
+                      </MDTypography>
+                      <MDTypography paragraph>{viewRatingData.user.address || "N/A"}</MDTypography>
+                      <Chip
+                        label={viewRatingData.user.kycStatus || "N/A"}
+                        color={viewRatingData.user.kycStatus === "approved" ? "success" : "default"}
+                        size="small"
+                      />
+                    </Grid>
                   </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDTypography>
-                      <strong>Email:</strong> {viewRatingData.User?.email || "N/A"}
-                    </MDTypography>
-                  </Grid>
-                </Grid>
+                </Paper>
               </MDBox>
 
-              <Divider sx={{ my: 2 }} />
+              {/* Host Information */}
+              <MDBox mb={3}>
+                <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                  Host Information
+                </MDTypography>
+                <Paper elevation={0} sx={{ p: 2, mb: 2, backgroundColor: "#f5f5f5" }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Box display="flex" alignItems="center" mb={2}>
+                        <Avatar
+                          src={viewRatingData.host.profilePhoto}
+                          sx={{ width: 56, height: 56, mr: 2 }}
+                        >
+                          {viewRatingData.host.name?.charAt(0) || <PersonIcon />}
+                        </Avatar>
+                        <Box>
+                          <MDTypography variant="h6">{viewRatingData.host.name}</MDTypography>
+                          <MDTypography variant="body2" color="textSecondary">
+                            Host ID: {viewRatingData.host.id}
+                          </MDTypography>
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <PhoneIcon color="action" sx={{ mr: 1 }} />
+                        <MDTypography>{viewRatingData.host.mobileNumber || "N/A"}</MDTypography>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <EmailIcon color="action" sx={{ mr: 1 }} />
+                        <MDTypography>{viewRatingData.host.email || "N/A"}</MDTypography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <MDTypography variant="subtitle2" gutterBottom>
+                        <strong>Vehicle Details:</strong>
+                      </MDTypography>
+                      <MDTypography paragraph>
+                        {viewRatingData.host.vehicleBrand} {viewRatingData.host.vehicleModel} (
+                        {viewRatingData.host.vehicleRegistrationYear})
+                      </MDTypography>
+                      <Chip
+                        label={viewRatingData.host.kycStatus || "N/A"}
+                        color={viewRatingData.host.kycStatus === "approved" ? "success" : "default"}
+                        size="small"
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </MDBox>
 
+              {/* Review Section */}
               <MDBox mb={3}>
                 <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
                   Review
                 </MDTypography>
-                <Box
-                  sx={{
-                    p: 2,
-                    border: "1px solid #eee",
-                    borderRadius: 1,
-                    backgroundColor: "#f9f9f9",
-                  }}
-                >
-                  <MDTypography variant="body2">
-                    {viewRatingData.review || "No review provided"}
+                <Paper elevation={0} sx={{ p: 2, backgroundColor: "#f5f5f5" }}>
+                  <MDTypography variant="body1">
+                    {viewRatingData.rating.review || "No review provided"}
                   </MDTypography>
-                </Box>
+                </Paper>
               </MDBox>
             </MDBox>
           )}
@@ -453,17 +589,19 @@ function Ratings() {
 Ratings.propTypes = {
   row: PropTypes.shape({
     original: PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      createdRideId: PropTypes.number.isRequired,
-      rating: PropTypes.number.isRequired,
-      review: PropTypes.string,
-      User: PropTypes.shape({
-        id: PropTypes.number,
-        name: PropTypes.string,
-        email: PropTypes.string,
-      }),
-      createdAt: PropTypes.string.isRequired,
-      updatedAt: PropTypes.string.isRequired,
+      rating: PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        createdRideId: PropTypes.string.isRequired,
+        hostId: PropTypes.string.isRequired,
+        userId: PropTypes.number.isRequired,
+        rating: PropTypes.number.isRequired,
+        review: PropTypes.string,
+        createdAt: PropTypes.string.isRequired,
+        updatedAt: PropTypes.string.isRequired,
+      }).isRequired,
+      rideCreation: PropTypes.object.isRequired,
+      host: PropTypes.object.isRequired,
+      user: PropTypes.object.isRequired,
     }).isRequired,
   }).isRequired,
 };
