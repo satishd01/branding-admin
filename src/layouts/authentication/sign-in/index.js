@@ -24,6 +24,7 @@ function Basic() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://traveller-api.synoventum.site";
@@ -39,6 +40,7 @@ function Basic() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     const payload = {
       email: email,
@@ -64,10 +66,24 @@ function Basic() {
         localStorage.setItem("email", data.data.admin.email);
         localStorage.setItem("role", data.data.admin.role);
 
+        // Store permissions in localStorage
+        localStorage.setItem("permissions", JSON.stringify(data.data.admin.permissions));
+        localStorage.setItem("analytics", data.data.admin.permissions.analytics);
+        localStorage.setItem("ride_analytics", data.data.admin.permissions.ride_analytics);
+        localStorage.setItem("dynamic_pricing", data.data.admin.permissions.dynamic_pricing);
+        localStorage.setItem("ride_management", data.data.admin.permissions.ride_management);
+        localStorage.setItem("user_management", data.data.admin.permissions.user_management);
+        localStorage.setItem("dispute_management", data.data.admin.permissions.dispute_management);
+        localStorage.setItem(
+          "promotion_management",
+          data.data.admin.permissions.promotion_management
+        );
+
         setSnackbarMessage(data.message);
         setSnackbarSeverity("success");
         setOpenSnackbar(true);
 
+        // Only navigate after successful login
         setTimeout(() => navigate("/analytics"), 2000);
       } else {
         setErrorMessage(data.message);
@@ -81,6 +97,8 @@ function Basic() {
       setSnackbarMessage("Connection error. Please try again.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -146,13 +164,14 @@ function Basic() {
                 variant="gradient"
                 fullWidth
                 type="submit"
+                disabled={isLoading}
                 sx={{
                   backgroundColor: "#66BB6A",
                   color: "#ffffff",
                   "&:hover": { backgroundColor: "#4CAF50" },
                 }}
               >
-                Log in
+                {isLoading ? "Logging in..." : "Log in"}
               </MDButton>
             </MDBox>
             {errorMessage && (
