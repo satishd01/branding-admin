@@ -119,12 +119,12 @@ const allRoutes = [
   },
   {
     type: "collapse",
-    name: "Rating",
-    key: "rating",
+    name: "Ratings",
+    key: "ratings",
     icon: <Icon fontSize="small">star</Icon>,
-    route: "/rating",
+    route: "/ratings",
     component: <Rating />,
-    permission: "rating",
+    permission: "promotion_management",
   },
   {
     type: "collapse",

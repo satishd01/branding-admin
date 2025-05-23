@@ -199,7 +199,43 @@ function Ratings() {
       name: PropTypes.string,
       email: PropTypes.string,
       profilePhoto: PropTypes.string,
-    }),
+    }).isRequired,
+  };
+
+  // Cell component for Ride column
+  const RideCell = ({ value }) => (
+    <MDTypography
+      variant="caption"
+      sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}
+    >
+      {value}
+    </MDTypography>
+  );
+
+  RideCell.propTypes = {
+    value: PropTypes.string.isRequired,
+  };
+
+  // Cell component for Rating column
+  const RatingCell = ({ value }) => renderRatingStars(value);
+
+  RatingCell.propTypes = {
+    value: PropTypes.number.isRequired,
+  };
+
+  // Cell component for Actions column
+  const ActionsCell = ({ row }) => (
+    <Tooltip title="View Details">
+      <IconButton onClick={() => handleViewRating(row.original)}>
+        <VisibilityIcon color="info" />
+      </IconButton>
+    </Tooltip>
+  );
+
+  ActionsCell.propTypes = {
+    row: PropTypes.shape({
+      original: PropTypes.object.isRequired,
+    }).isRequired,
   };
 
   const columns = [
@@ -207,25 +243,18 @@ function Ratings() {
     {
       Header: "User",
       accessor: "user",
-      Cell: ({ value }) => <UserCell value={value} />,
+      Cell: UserCell,
     },
     {
       Header: "Ride",
       accessor: (row) =>
         `#${row.rideCreation.id}: ${row.rideCreation.pickupAddress} → ${row.rideCreation.dropAddress}`,
-      Cell: ({ value }) => (
-        <MDTypography
-          variant="caption"
-          sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}
-        >
-          {value}
-        </MDTypography>
-      ),
+      Cell: RideCell,
     },
     {
       Header: "Rating",
       accessor: (row) => row.rating.rating,
-      Cell: ({ value }) => renderRatingStars(value),
+      Cell: RatingCell,
     },
     {
       Header: "Date",
@@ -234,13 +263,7 @@ function Ratings() {
     {
       Header: "Actions",
       accessor: "actions",
-      Cell: ({ row }) => (
-        <Tooltip title="View Details">
-          <IconButton onClick={() => handleViewRating(row.original)}>
-            <VisibilityIcon color="info" />
-          </IconButton>
-        </Tooltip>
-      ),
+      Cell: ActionsCell,
     },
   ];
 
@@ -585,25 +608,5 @@ function Ratings() {
     </DashboardLayout>
   );
 }
-
-Ratings.propTypes = {
-  row: PropTypes.shape({
-    original: PropTypes.shape({
-      rating: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        createdRideId: PropTypes.string.isRequired,
-        hostId: PropTypes.string.isRequired,
-        userId: PropTypes.number.isRequired,
-        rating: PropTypes.number.isRequired,
-        review: PropTypes.string,
-        createdAt: PropTypes.string.isRequired,
-        updatedAt: PropTypes.string.isRequired,
-      }).isRequired,
-      rideCreation: PropTypes.object.isRequired,
-      host: PropTypes.object.isRequired,
-      user: PropTypes.object.isRequired,
-    }).isRequired,
-  }).isRequired,
-};
 
 export default Ratings;
