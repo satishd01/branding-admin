@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   IconButton,
-  Tooltip,
   Box,
   CircularProgress,
   MenuItem,
@@ -25,6 +24,8 @@ import {
   CardMedia,
   Snackbar,
   Alert,
+  Typography,
+  Divider,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -44,38 +45,35 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
 
-function Banners() {
+function PostCategories() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [banners, setBanners] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
   const [openViewDialog, setOpenViewDialog] = useState(false);
-  const [viewBannerData, setViewBannerData] = useState(null);
+  const [viewCategoryData, setViewCategoryData] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editData, setEditData] = useState({
     id: null,
-    banner_name: "",
-    banner_title: "",
-    image: "",
-    type: "home",
+    category_name: "",
+    category_details: "",
+    category_image: "",
     status: "active",
   });
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
-  const [newBanner, setNewBanner] = useState({
-    banner_name: "",
-    banner_title: "",
-    image: "",
-    type: "home",
+  const [newCategory, setNewCategory] = useState({
+    category_name: "",
+    category_details: "",
+    category_image: "",
     status: "active",
   });
   const [uploading, setUploading] = useState(false);
@@ -85,8 +83,8 @@ function Banners() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    fetchBanners();
-  }, [statusFilter, typeFilter]);
+    fetchCategories();
+  }, [statusFilter]);
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -96,7 +94,7 @@ function Banners() {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const fetchBanners = async () => {
+  const fetchCategories = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -106,23 +104,21 @@ function Banners() {
         return;
       }
 
-      let url = `${BASE_URL}/api/banner`;
-
-      const response = await fetch(url, {
+      const response = await fetch(`${BASE_URL}/api/post-categories`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch banners");
+        throw new Error("Failed to fetch categories");
       }
 
       const data = await response.json();
-      setBanners(data.data || []);
+      setCategories(data.data || []);
     } catch (error) {
-      console.error("Error fetching banner data:", error);
-      showSnackbar("Error fetching banners", "error");
+      console.error("Error fetching category data:", error);
+      showSnackbar("Error fetching categories", "error");
     } finally {
       setLoading(false);
     }
@@ -154,7 +150,7 @@ function Banners() {
       }
 
       const data = await response.json();
-      return data.files[0].filename; // Return only the filename
+      return data.files[0].filename;
     } catch (error) {
       console.error("Error uploading file:", error);
       showSnackbar(error.message || "Error uploading file", "error");
@@ -164,19 +160,18 @@ function Banners() {
     }
   };
 
-  const handleViewBanner = (banner) => {
-    setViewBannerData(banner);
+  const handleViewCategory = (category) => {
+    setViewCategoryData(category);
     setOpenViewDialog(true);
   };
 
-  const handleOpenEditDialog = (banner) => {
+  const handleOpenEditDialog = (category) => {
     setEditData({
-      id: banner.id,
-      banner_name: banner.banner_name,
-      banner_title: banner.banner_title,
-      image: banner.image,
-      type: banner.type,
-      status: banner.status,
+      id: category.id,
+      category_name: category.category_name,
+      category_details: category.category_details,
+      category_image: category.category_image,
+      status: category.status,
     });
     setOpenEditDialog(true);
   };
@@ -190,7 +185,7 @@ function Banners() {
     setOpenCreateDialog(true);
   };
 
-  const handleUpdateBanner = async () => {
+  const handleUpdateCategory = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -199,7 +194,7 @@ function Banners() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/banner/${editData.id}`, {
+      const response = await fetch(`${BASE_URL}/api/post-categories/${editData.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -209,19 +204,19 @@ function Banners() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update banner");
+        throw new Error("Failed to update category");
       }
 
-      showSnackbar("Banner updated successfully");
+      showSnackbar("Category updated successfully");
       setOpenEditDialog(false);
-      fetchBanners();
+      fetchCategories();
     } catch (error) {
-      console.error("Error updating banner:", error);
-      showSnackbar(error.message || "Error updating banner", "error");
+      console.error("Error updating category:", error);
+      showSnackbar(error.message || "Error updating category", "error");
     }
   };
 
-  const handleDeleteBanner = async () => {
+  const handleDeleteCategory = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -230,7 +225,7 @@ function Banners() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/banner/${deleteId}`, {
+      const response = await fetch(`${BASE_URL}/api/post-categories/${deleteId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -238,19 +233,19 @@ function Banners() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete banner");
+        throw new Error("Failed to delete category");
       }
 
-      showSnackbar("Banner deleted successfully");
+      showSnackbar("Category deleted successfully");
       setOpenDeleteDialog(false);
-      fetchBanners();
+      fetchCategories();
     } catch (error) {
-      console.error("Error deleting banner:", error);
-      showSnackbar(error.message || "Error deleting banner", "error");
+      console.error("Error deleting category:", error);
+      showSnackbar(error.message || "Error deleting category", "error");
     }
   };
 
-  const handleCreateBanner = async () => {
+  const handleCreateCategory = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -259,64 +254,35 @@ function Banners() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/banner`, {
+      const response = await fetch(`${BASE_URL}/api/post-categories`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newBanner),
+        body: JSON.stringify(newCategory),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create banner");
+        throw new Error("Failed to create category");
       }
 
-      showSnackbar("Banner created successfully");
+      showSnackbar("Category created successfully");
       setOpenCreateDialog(false);
-      setNewBanner({
-        banner_name: "",
-        banner_title: "",
-        image: "",
-        type: "home",
+      setNewCategory({
+        category_name: "",
+        category_details: "",
+        category_image: "",
         status: "active",
       });
-      fetchBanners();
+      fetchCategories();
     } catch (error) {
-      console.error("Error creating banner:", error);
-      showSnackbar(error.message || "Error creating banner", "error");
+      console.error("Error creating category:", error);
+      showSnackbar(error.message || "Error creating category", "error");
     }
   };
 
-  // Helper to render a Chip for banner type
-  function getTypeChip(type) {
-    let color = "default";
-    let label = type;
-    switch (type) {
-      case "home":
-        color = "primary";
-        label = "Home";
-        break;
-      case "promo":
-        color = "success";
-        label = "Promo";
-        break;
-      case "category":
-        color = "info";
-        label = "Category";
-        break;
-      case "bottom":
-        color = "secondary";
-        label = "Bottom";
-        break;
-      default:
-        color = "default";
-        label = type;
-    }
-    return <Chip label={label} color={color} size="small" />;
-  }
-
-  // Helper to render a Chip for banner status
+  // Helper to render a Chip for category status
   function getStatusChip(status) {
     let color = "default";
     let label = status;
@@ -336,8 +302,8 @@ function Banners() {
     return <Chip label={label} color={color} size="small" />;
   }
 
-  // Helper to render banner image
-  function renderBannerImage(filename) {
+  // Helper to render category image
+  function renderCategoryImage(filename) {
     if (!filename) return <MDTypography variant="caption">No Image</MDTypography>;
 
     return (
@@ -350,6 +316,11 @@ function Banners() {
         />
       </Box>
     );
+  }
+
+  // Helper to render posts count
+  function renderPostsCount(posts) {
+    return <Chip label={`${posts.length} posts`} color="info" size="small" variant="outlined" />;
   }
 
   // Actions column cell component
@@ -437,22 +408,31 @@ function Banners() {
     onView: PropTypes.func.isRequired,
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
+    value: PropTypes.any, // Ensure value is included
   };
 
   // Define columns for DataTable
   const columns = [
     { Header: "ID", accessor: "id" },
-    { Header: "Name", accessor: "banner_name" },
-    { Header: "Title", accessor: "banner_title" },
+    { Header: "Name", accessor: "category_name" },
     {
-      Header: "Image",
-      accessor: "image",
-      Cell: ({ value }) => renderBannerImage(value),
+      Header: "Details",
+      accessor: "category_details",
+      Cell: ({ value }) => (
+        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+          {value}
+        </Typography>
+      ),
     },
     {
-      Header: "Type",
-      accessor: "type",
-      Cell: ({ value }) => getTypeChip(value),
+      Header: "Image",
+      accessor: "category_image",
+      Cell: ({ value }) => renderCategoryImage(value),
+    },
+    {
+      Header: "Posts",
+      accessor: "posts",
+      Cell: ({ value }) => renderPostsCount(value),
     },
     {
       Header: "Status",
@@ -470,25 +450,32 @@ function Banners() {
       Cell: (cellProps) => (
         <ActionsColumnCell
           {...cellProps}
-          onView={handleViewBanner}
+          onView={handleViewCategory}
           onEdit={handleOpenEditDialog}
           onDelete={handleOpenDeleteDialog}
+          value={cellProps.value} // Ensure value is passed
         />
       ),
     },
   ];
 
-  const filteredBanners = banners.filter((banner) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      banner.banner_name.toLowerCase().includes(searchTermLower) ||
-      (banner.banner_title && banner.banner_title.toLowerCase().includes(searchTermLower)) ||
-      banner.id.toString().includes(searchTermLower)
-    );
-  });
+  const filteredCategories = categories
+    .filter((category) => {
+      const searchTermLower = searchTerm.toLowerCase();
+      return (
+        category.category_name.toLowerCase().includes(searchTermLower) ||
+        (category.category_details &&
+          category.category_details.toLowerCase().includes(searchTermLower)) ||
+        category.id.toString().includes(searchTermLower)
+      );
+    })
+    .filter((category) => {
+      if (statusFilter === "all") return true;
+      return category.status === statusFilter;
+    });
 
   // Apply pagination
-  const paginatedBanners = filteredBanners.slice(
+  const paginatedCategories = filteredCategories.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -539,7 +526,7 @@ function Banners() {
                   flexWrap="wrap"
                 >
                   <MDTypography variant="h6" color="black">
-                    Banners Management
+                    Post Categories Management
                   </MDTypography>
                   <MDBox display="flex" gap={2} flexWrap="wrap">
                     <FormControl sx={{ minWidth: 120 }} size="small">
@@ -555,23 +542,8 @@ function Banners() {
                         <MenuItem value="inactive">Inactive</MenuItem>
                       </Select>
                     </FormControl>
-                    <FormControl sx={{ minWidth: 120 }} size="small">
-                      <InputLabel>Type</InputLabel>
-                      <Select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        label="Type"
-                        sx={{ width: 150, height: 35 }}
-                      >
-                        <MenuItem value="all">All</MenuItem>
-                        <MenuItem value="home">Home</MenuItem>
-                        <MenuItem value="promo">Promo</MenuItem>
-                        <MenuItem value="category">Category</MenuItem>
-                        <MenuItem value="bottom">Bottom</MenuItem>
-                      </Select>
-                    </FormControl>
                     <TextField
-                      label="Search banners"
+                      label="Search categories"
                       type="text"
                       fullWidth
                       value={searchTerm}
@@ -589,14 +561,14 @@ function Banners() {
                       startIcon={<AddIcon />}
                       onClick={handleOpenCreateDialog}
                     >
-                      Create Banner
+                      Create Category
                     </Button>
                   </MDBox>
                 </MDBox>
               </MDBox>
               <MDBox pt={3}>
                 <DataTable
-                  table={{ columns, rows: paginatedBanners }}
+                  table={{ columns, rows: paginatedCategories }}
                   isSorted={false}
                   entriesPerPage={false}
                   showTotalEntries={false}
@@ -605,7 +577,7 @@ function Banners() {
                 <TablePagination
                   rowsPerPageOptions={[5, 10, 25, 50]}
                   component="div"
-                  count={filteredBanners.length}
+                  count={filteredCategories.length}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={handleChangePage}
@@ -617,7 +589,7 @@ function Banners() {
         </Grid>
       </MDBox>
 
-      {/* Banner Details View Dialog */}
+      {/* Category Details View Dialog */}
       <Dialog
         open={openViewDialog}
         onClose={() => setOpenViewDialog(false)}
@@ -627,14 +599,14 @@ function Banners() {
       >
         <DialogTitle>
           <MDBox display="flex" justifyContent="space-between" alignItems="center">
-            <MDTypography variant="h5">Banner Details</MDTypography>
+            <MDTypography variant="h5">Category Details</MDTypography>
             <IconButton onClick={() => setOpenViewDialog(false)}>
               <CloseIcon />
             </IconButton>
           </MDBox>
         </DialogTitle>
         <DialogContent dividers>
-          {viewBannerData && (
+          {viewCategoryData && (
             <MDBox>
               <MDBox mb={3}>
                 <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
@@ -643,58 +615,83 @@ function Banners() {
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>ID:</strong> {viewBannerData.id}
+                      <strong>ID:</strong> {viewCategoryData.id}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>Name:</strong> {viewBannerData.banner_name}
+                      <strong>Name:</strong> {viewCategoryData.category_name}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12}>
                     <MDTypography>
-                      <strong>Title:</strong> {viewBannerData.banner_title}
+                      <strong>Details:</strong> {viewCategoryData.category_details}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12}>
                     <MDTypography>
-                      <strong>Image:</strong> {viewBannerData.image}
+                      <strong>Image:</strong> {viewCategoryData.category_image || "No image"}
                     </MDTypography>
                   </Grid>
-                  <Grid item xs={12}>
-                    <Box display="flex" justifyContent="center" my={2}>
-                      <CardMedia
-                        component="img"
-                        image={`${BASE_URL}/uploads/${viewBannerData.image}`}
-                        sx={{ width: "100%", maxWidth: 400, height: "auto" }}
-                        alt="Banner Image"
-                      />
-                    </Box>
-                  </Grid>
+                  {viewCategoryData.category_image && (
+                    <Grid item xs={12}>
+                      <Box display="flex" justifyContent="center" my={2}>
+                        <CardMedia
+                          component="img"
+                          image={`${BASE_URL}/uploads/${viewCategoryData.category_image}`}
+                          sx={{ width: "100%", maxWidth: 400, height: "auto" }}
+                          alt="Category Image"
+                        />
+                      </Box>
+                    </Grid>
+                  )}
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>Type:</strong> {getTypeChip(viewBannerData.type)}
-                    </MDTypography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDTypography>
-                      <strong>Status:</strong> {getStatusChip(viewBannerData.status)}
+                      <strong>Status:</strong> {getStatusChip(viewCategoryData.status)}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12}>
                     <MDTypography>
                       <strong>Created At:</strong>{" "}
-                      {new Date(viewBannerData.created_at).toLocaleString()}
+                      {new Date(viewCategoryData.created_at).toLocaleString()}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12}>
                     <MDTypography>
                       <strong>Updated At:</strong>{" "}
-                      {new Date(viewBannerData.updated_at).toLocaleString()}
+                      {new Date(viewCategoryData.updated_at).toLocaleString()}
                     </MDTypography>
                   </Grid>
                 </Grid>
               </MDBox>
+
+              {viewCategoryData.posts && viewCategoryData.posts.length > 0 && (
+                <MDBox mb={3}>
+                  <Divider sx={{ my: 2 }} />
+                  <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                    Associated Posts
+                  </MDTypography>
+                  <Grid container spacing={2}>
+                    {viewCategoryData.posts.map((post) => (
+                      <Grid item xs={12} sm={6} md={4} key={post.id}>
+                        <Card>
+                          <MDBox p={2}>
+                            <MDTypography variant="h6">{post.post_name}</MDTypography>
+                            {post.post_image && (
+                              <CardMedia
+                                component="img"
+                                image={`${BASE_URL}/uploads/${post.post_image}`}
+                                sx={{ width: "100%", height: 120, objectFit: "cover", mt: 1 }}
+                                alt="Post Image"
+                              />
+                            )}
+                          </MDBox>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </MDBox>
+              )}
             </MDBox>
           )}
         </DialogContent>
@@ -705,42 +702,43 @@ function Banners() {
         </DialogActions>
       </Dialog>
 
-      {/* Edit Banner Dialog */}
+      {/* Edit Category Dialog */}
       <Dialog
         open={openEditDialog}
         onClose={() => setOpenEditDialog(false)}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Edit Banner</DialogTitle>
+        <DialogTitle>Edit Category</DialogTitle>
         <DialogContent>
           <MDBox mt={2} mb={3}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Banner Name"
+                  label="Category Name"
                   fullWidth
                   margin="normal"
-                  value={editData.banner_name}
-                  onChange={(e) => setEditData({ ...editData, banner_name: e.target.value })}
+                  value={editData.category_name}
+                  onChange={(e) => setEditData({ ...editData, category_name: e.target.value })}
                   required
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Banner Title"
+                  label="Category Details"
                   fullWidth
                   margin="normal"
-                  value={editData.banner_title}
-                  onChange={(e) => setEditData({ ...editData, banner_title: e.target.value })}
-                  required
+                  multiline
+                  rows={4}
+                  value={editData.category_details}
+                  onChange={(e) => setEditData({ ...editData, category_details: e.target.value })}
                 />
               </Grid>
               <Grid item xs={12}>
                 <input
                   accept="image/*"
                   style={{ display: "none" }}
-                  id="edit-banner-upload"
+                  id="edit-category-upload"
                   type="file"
                   onChange={async (e) => {
                     const file = e.target.files[0];
@@ -749,46 +747,30 @@ function Banners() {
                       if (filename) {
                         setEditData({
                           ...editData,
-                          image: filename,
+                          category_image: filename,
                         });
                       }
                     }
                   }}
                 />
-                <label htmlFor="edit-banner-upload">
+                <label htmlFor="edit-category-upload">
                   <Button variant="contained" component="span" startIcon={<AddIcon />}>
                     Upload New Image
                   </Button>
                 </label>
                 {uploading && <CircularProgress size={24} />}
-                {editData.image && (
+                {editData.category_image && (
                   <Box mt={2}>
                     <CardMedia
                       component="img"
-                      image={`${BASE_URL}/uploads/${editData.image}`}
+                      image={`${BASE_URL}/uploads/${editData.category_image}`}
                       sx={{ width: 200, height: 100 }}
-                      alt="Banner Preview"
+                      alt="Category Preview"
                     />
                   </Box>
                 )}
               </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Type</InputLabel>
-                  <Select
-                    value={editData.type}
-                    onChange={(e) => setEditData({ ...editData, type: e.target.value })}
-                    label="Type"
-                    required
-                  >
-                    <MenuItem value="home">Home</MenuItem>
-                    <MenuItem value="promo">Promo</MenuItem>
-                    <MenuItem value="category">Category</MenuItem>
-                    <MenuItem value="bottom">Bottom</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -807,7 +789,7 @@ function Banners() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-          <Button onClick={handleUpdateBanner} color="error" variant="contained">
+          <Button onClick={handleUpdateCategory} color="error" variant="contained">
             Save Changes
           </Button>
         </DialogActions>
@@ -824,19 +806,19 @@ function Banners() {
         <DialogContent>
           <MDBox mt={2} mb={3}>
             <MDTypography>
-              Are you sure you want to delete this banner? This action cannot be undone.
+              Are you sure you want to delete this category? This action cannot be undone.
             </MDTypography>
           </MDBox>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
-          <Button onClick={handleDeleteBanner} color="error" variant="contained">
+          <Button onClick={handleDeleteCategory} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Create Banner Dialog */}
+      {/* Create Category Dialog */}
       <Dialog
         open={openCreateDialog}
         onClose={() => setOpenCreateDialog(false)}
@@ -846,7 +828,7 @@ function Banners() {
       >
         <DialogTitle>
           <MDBox display="flex" justifyContent="space-between" alignItems="center">
-            <MDTypography variant="h5">Create New Banner</MDTypography>
+            <MDTypography variant="h5">Create New Category</MDTypography>
             <IconButton onClick={() => setOpenCreateDialog(false)}>
               <CloseIcon />
             </IconButton>
@@ -855,84 +837,73 @@ function Banners() {
         <DialogContent dividers>
           <MDBox mb={3}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Banner Name"
+                  label="Category Name"
                   fullWidth
                   margin="normal"
-                  value={newBanner.banner_name}
-                  onChange={(e) => setNewBanner({ ...newBanner, banner_name: e.target.value })}
+                  value={newCategory.category_name}
+                  onChange={(e) =>
+                    setNewCategory({ ...newCategory, category_name: e.target.value })
+                  }
                   required
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Banner Title"
+                  label="Category Details"
                   fullWidth
                   margin="normal"
-                  value={newBanner.banner_title}
-                  onChange={(e) => setNewBanner({ ...newBanner, banner_title: e.target.value })}
-                  required
+                  multiline
+                  rows={4}
+                  value={newCategory.category_details}
+                  onChange={(e) =>
+                    setNewCategory({ ...newCategory, category_details: e.target.value })
+                  }
                 />
               </Grid>
               <Grid item xs={12}>
                 <input
                   accept="image/*"
                   style={{ display: "none" }}
-                  id="create-banner-upload"
+                  id="create-category-upload"
                   type="file"
                   onChange={async (e) => {
                     const file = e.target.files[0];
                     if (file) {
                       const filename = await handleFileUpload(file);
                       if (filename) {
-                        setNewBanner({
-                          ...newBanner,
-                          image: filename,
+                        setNewCategory({
+                          ...newCategory,
+                          category_image: filename,
                         });
                       }
                     }
                   }}
                 />
-                <label htmlFor="create-banner-upload">
+                <label htmlFor="create-category-upload">
                   <Button variant="contained" component="span" startIcon={<AddIcon />}>
                     Upload Image
                   </Button>
                 </label>
                 {uploading && <CircularProgress size={24} />}
-                {newBanner.image && (
+                {newCategory.category_image && (
                   <Box mt={2}>
                     <CardMedia
                       component="img"
-                      image={`${BASE_URL}/uploads/${newBanner.image}`}
+                      image={`${BASE_URL}/uploads/${newCategory.category_image}`}
                       sx={{ width: 200, height: 100 }}
-                      alt="Banner Preview"
+                      alt="Category Preview"
                     />
                   </Box>
                 )}
               </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Type</InputLabel>
-                  <Select
-                    value={newBanner.type}
-                    onChange={(e) => setNewBanner({ ...newBanner, type: e.target.value })}
-                    label="Type"
-                    required
-                  >
-                    <MenuItem value="home">Home</MenuItem>
-                    <MenuItem value="promo">Promo</MenuItem>
-                    <MenuItem value="category">Category</MenuItem>
-                    <MenuItem value="bottom">Bottom</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Status</InputLabel>
                   <Select
-                    value={newBanner.status}
-                    onChange={(e) => setNewBanner({ ...newBanner, status: e.target.value })}
+                    value={newCategory.status}
+                    onChange={(e) => setNewCategory({ ...newCategory, status: e.target.value })}
                     label="Status"
                     required
                   >
@@ -946,8 +917,8 @@ function Banners() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenCreateDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateBanner} color="error" variant="contained">
-            Create Banner
+          <Button onClick={handleCreateCategory} color="error" variant="contained">
+            Create Category
           </Button>
         </DialogActions>
       </Dialog>
@@ -969,4 +940,4 @@ function Banners() {
   );
 }
 
-export default Banners;
+export default PostCategories;

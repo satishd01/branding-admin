@@ -33,8 +33,8 @@ import routes from "routes";
 import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "context";
 
 // Images
-import brandWhite from "assets/images/logos/logo.jpeg";
-import brandDark from "assets/images/logos/logo.jpeg";
+import brandWhite from "assets/images/logos/logo.png";
+import brandDark from "assets/images/logos/logo.png";
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();
@@ -125,7 +125,7 @@ export default function App() {
             <Sidenav
               color={sidenavColor}
               brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
-              brandName="Travelers Admin"
+              brandName="Business-Branding"
               routes={routes}
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
@@ -149,7 +149,7 @@ export default function App() {
           <Sidenav
             color={sidenavColor}
             brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
-            brandName="Travelers Admin"
+            brandName="Business-Branding"
             routes={routes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}

@@ -7,8 +7,8 @@ import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
-import bgImage from "assets/images/logos/logo.jpeg";
-import logo from "assets/images/logos/logo.jpeg";
+import bgImage from "assets/images/logos/logo.png";
+import logo from "assets/images/logos/logo.png";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 
@@ -27,7 +27,8 @@ function Basic() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://traveller-api.synoventum.site";
+  const BASE_URL =
+    process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
   const handleEmailChange = (e) => setEmail(e.target.value);
@@ -42,58 +43,42 @@ function Basic() {
     e.preventDefault();
     setIsLoading(true);
 
-    const payload = {
-      email: email,
-      password: password,
-    };
-
     try {
-      const response = await fetch(`${BASE_URL}/v1/admin/login`, {
+      const response = await fetch(`${BASE_URL}/api/admin/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json();
+      } else {
+        throw new Error("Invalid server response: not JSON");
+      }
+      setTimeout(() => navigate("/dashboard"), 2000);
       if (data.status) {
-        // Store token and admin details in localStorage
+        // Store token and other values as plain strings
         localStorage.setItem("token", data.data.token);
-        localStorage.setItem("id", data.data.admin.id);
-        localStorage.setItem("name", data.data.admin.name);
+        localStorage.setItem("id", String(data.data.admin.id));
         localStorage.setItem("email", data.data.admin.email);
-        localStorage.setItem("role", data.data.admin.role);
-
-        // Store permissions in localStorage
-        localStorage.setItem("permissions", JSON.stringify(data.data.admin.permissions));
-        localStorage.setItem("analytics", data.data.admin.permissions.analytics);
-        localStorage.setItem("ride_analytics", data.data.admin.permissions.ride_analytics);
-        localStorage.setItem("dynamic_pricing", data.data.admin.permissions.dynamic_pricing);
-        localStorage.setItem("ride_management", data.data.admin.permissions.ride_management);
-        localStorage.setItem("user_management", data.data.admin.permissions.user_management);
-        localStorage.setItem("dispute_management", data.data.admin.permissions.dispute_management);
-        localStorage.setItem(
-          "promotion_management",
-          data.data.admin.permissions.promotion_management
-        );
+        localStorage.setItem("name", data.data.admin.name);
 
         setSnackbarMessage(data.message);
         setSnackbarSeverity("success");
         setOpenSnackbar(true);
 
-        // Only navigate after successful login
-        setTimeout(() => navigate("/analytics"), 2000);
+        setTimeout(() => navigate("/dashboard"), 2000);
       } else {
-        setErrorMessage(data.message);
-        setSnackbarMessage(data.message);
+        setSnackbarMessage(data.message || "Login failed");
         setSnackbarSeverity("error");
         setOpenSnackbar(true);
       }
     } catch (error) {
       console.error("Login error:", error);
-      setErrorMessage("Connection error. Please try again.");
       setSnackbarMessage("Connection error. Please try again.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
@@ -174,11 +159,6 @@ function Basic() {
                 {isLoading ? "Logging in..." : "Log in"}
               </MDButton>
             </MDBox>
-            {errorMessage && (
-              <MDTypography variant="body2" color="error" textAlign="center">
-                {errorMessage}
-              </MDTypography>
-            )}
           </MDBox>
         </MDBox>
       </Card>

@@ -1,53 +1,127 @@
 // @mui material components
 import Grid from "@mui/material/Grid";
+
+// Custom components
 import MDBox from "components/MDBox";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
 
-// Data
+// React
 import { useEffect, useState } from "react";
 
 function Dashboard() {
-  const [vendorCount, setVendorCount] = useState(0);
+  const [stats, setStats] = useState({
+    users: 0,
+    posts: 0,
+    postTemplates: 0,
+    banners: 0,
+    businessCards: 0,
+    businessCardCategories: 0,
+  });
 
   useEffect(() => {
-    const fetchVendorCount = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await fetch("https://deardabba.shellcode.store/api/admin/vendors", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbjFAZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NDU4MzYwMjAsImV4cCI6MTc0NTkyMjQyMH0.myJ1vmKkoTZbljhYQ1PIX0Ss6iu0jRIof2hm_9qN_X4",
-          },
-        });
+        const response = await fetch(
+          "https://business-branding.synoventum.site/api/admin/dashboard",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "text/plain",
+              Authorization:
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsImlhdCI6MTc0Nzk5MjI3MSwiZXhwIjoxNzQ4MDc4NjcxfQ.XrHN70Hc3lvT3xSdEBqrBVKV78UzrI1qJyLMEnr7JYE",
+            },
+          }
+        );
 
-        const data = await response.json();
-        setVendorCount(data.pagination?.total || 0); // Safely access total
+        const result = await response.json();
+        const data = result.data;
+
+        setStats({
+          users: data.users?.total || 0,
+          posts: data.posts?.total || 0,
+          postTemplates: data.postTemplates?.total || 0,
+          banners: data.banners?.total || 0,
+          businessCards: data.businessCards?.total || 0,
+          businessCardCategories: data.businessCardCategories?.total || 0,
+        });
       } catch (error) {
-        console.error("Error fetching vendor count:", error);
+        console.error("Failed to fetch dashboard data:", error);
       }
     };
 
-    fetchVendorCount();
+    fetchDashboardData();
   }, []);
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
       <MDBox py={3}>
-        <Grid container spacing={3}></Grid>
-        {/* Displaying dashboard stats */}
-        <Grid container spacing={3} mt={3}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6} lg={3}>
+            <MDBox mb={1.5}>
+              <ComplexStatisticsCard
+                color="info"
+                icon="people"
+                title="Total Users"
+                count={stats.users}
+              />
+            </MDBox>
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={3}>
+            <MDBox mb={1.5}>
+              <ComplexStatisticsCard
+                color="dark"
+                icon="article"
+                title="Total Posts"
+                count={stats.posts}
+              />
+            </MDBox>
+          </Grid>
+
           <Grid item xs={12} md={6} lg={3}>
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
                 color="secondary"
-                icon="store"
-                title="Total Vendors"
-                count={vendorCount}
+                icon="widgets"
+                title="Post Templates"
+                count={stats.postTemplates}
+              />
+            </MDBox>
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={3}>
+            <MDBox mb={1.5}>
+              <ComplexStatisticsCard
+                color="warning"
+                icon="image"
+                title="Banners"
+                count={stats.banners}
+              />
+            </MDBox>
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={3}>
+            <MDBox mb={1.5}>
+              <ComplexStatisticsCard
+                color="primary"
+                icon="business"
+                title="Business Cards"
+                count={stats.businessCards}
+              />
+            </MDBox>
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={3}>
+            <MDBox mb={1.5}>
+              <ComplexStatisticsCard
+                color="success"
+                icon="category"
+                title="Card Categories"
+                count={stats.businessCardCategories}
               />
             </MDBox>
           </Grid>

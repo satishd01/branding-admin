@@ -1,162 +1,70 @@
 // Material Dashboard 2 React layouts
 import Dashboard from "layouts/dashboard";
 import SignIn from "layouts/authentication/sign-in";
-import Analytics from "layouts/tables/analytics";
-import Vendors from "layouts/tables/vendor";
-import Hosts from "layouts/tables/user";
-import Rides from "layouts/tables/ride";
-import Promotions from "layouts/tables/promotion";
-import Disputes from "layouts/tables/dispute";
-import Disputemanagement from "layouts/tables/dispute";
-import DynamicPricing from "layouts/tables/dynamic-pricing";
 import Banner from "layouts/tables/banners";
-import Notifications from "layouts/tables/notifications";
-import Content from "layouts/tables/content";
-import Rating from "layouts/tables/ratings";
-import AdminUsers from "layouts/tables/admin";
+import Hosts from "layouts/tables/user";
+import Festival from "layouts/tables/festival";
+import BusinessCardCategory from "layouts/tables/BusinessCardCategory";
+import PostCategories from "layouts/tables/PostCategories";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
 
-// Function to check permissions
-const hasPermission = (permissionKey) => {
-  // Get permissions from localStorage
-  const permissions = JSON.parse(localStorage.getItem("permissions"));
-  // If permissions exist, check the specific permission
-  return permissions ? permissions[permissionKey] === true : false;
-};
-
 // Define base routes that everyone can access
-const baseRoutes = [
+const routes = [
   {
     route: "/authentication/sign-in",
     component: <SignIn />,
   },
-];
-
-// Define all possible routes with their required permissions
-const allRoutes = [
   {
     type: "collapse",
-    name: "Analytics",
-    key: "analytics",
-    icon: <Icon fontSize="small">bar_chart</Icon>,
-    route: "/analytics",
-    component: <Analytics />,
-    permission: "analytics",
+    name: "Dashboard",
+    key: "dashboard",
+    icon: <Icon fontSize="small">dashboard</Icon>,
+    route: "/dashboard",
+    component: <Dashboard />,
   },
   {
     type: "collapse",
     name: "Users",
     key: "users",
-    icon: <Icon fontSize="small">people</Icon>,
+    icon: <Icon fontSize="small">group</Icon>, // Changed from 'people' to 'group' (more modern)
     route: "/users",
     component: <Hosts />,
     permission: "user_management",
   },
   {
     type: "collapse",
-    name: "Admin Users",
-    key: "admin-users",
-    icon: <Icon fontSize="small">admin_panel_settings</Icon>,
-    route: "/admin-users",
-    component: <AdminUsers />,
-    permission: "user_management",
-  },
-  {
-    type: "collapse",
-    name: "Rides",
-    key: "rides",
-    icon: <Icon fontSize="small">directions_car</Icon>,
-    route: "/rides",
-    component: <Rides />,
-    permission: "ride_management",
-  },
-  {
-    type: "collapse",
-    name: "Promotions",
-    key: "promotions",
-    icon: <Icon fontSize="small">local_offer</Icon>,
-    route: "/promotions",
-    component: <Promotions />,
-    permission: "promotion_management",
-  },
-  {
-    type: "collapse",
-    name: "Dynamic Pricing",
-    key: "dynamic-pricing",
-    icon: <Icon fontSize="small">trending_up</Icon>,
-    route: "/dynamic-pricing",
-    component: <DynamicPricing />,
-    permission: "dynamic_pricing",
-  },
-  {
-    type: "collapse",
     name: "Banners",
     key: "banners",
-    icon: <Icon fontSize="small">image</Icon>,
+    icon: <Icon fontSize="small">collections</Icon>, // Changed from 'image' to 'collections' (better for multiple banners)
     route: "/banners",
     component: <Banner />,
-    permission: "promotion_management",
   },
   {
     type: "collapse",
-    name: "Disputes",
-    key: "disputes",
-    icon: <Icon fontSize="small">report</Icon>,
-    route: "/disputes",
-    component: <Disputemanagement />,
-    permission: "dispute_management",
+    name: "Festival",
+    key: "festival",
+    icon: <Icon fontSize="small">celebration</Icon>, // More specific than 'festival'
+    route: "/festival",
+    component: <Festival />,
   },
   {
     type: "collapse",
-    name: "Notifications",
-    key: "notifications",
-    icon: <Icon fontSize="small">notifications</Icon>,
-    route: "/notifications",
-    component: <Notifications />,
-    permission: "promotion_management",
+    name: "Business Card Category",
+    key: "business-card-category",
+    icon: <Icon fontSize="small">contact_mail</Icon>, // Represents business cards better
+    route: "/business-card-category",
+    component: <BusinessCardCategory />,
   },
   {
     type: "collapse",
-    name: "Ratings",
-    key: "ratings",
-    icon: <Icon fontSize="small">star</Icon>,
-    route: "/ratings",
-    component: <Rating />,
-    permission: "promotion_management",
-  },
-  {
-    type: "collapse",
-    name: "Content",
-    key: "content",
-    icon: <Icon fontSize="small">description</Icon>,
-    route: "/content",
-    component: <Content />,
-    permission: "promotion_management",
+    name: "Post Categories",
+    key: "post-categories",
+    icon: <Icon fontSize="small">bookmark</Icon>, // Changed from 'category' to differentiate from business card categories
+    route: "/post-categories",
+    component: <PostCategories />,
   },
 ];
-
-// Filter routes based on permissions
-const getFilteredRoutes = () => {
-  // If no permissions are set (not logged in), return only base routes
-  if (!localStorage.getItem("permissions")) {
-    return baseRoutes;
-  }
-
-  // Filter routes based on permissions
-  const filteredRoutes = allRoutes.filter((route) => {
-    // If route doesn't require specific permission, include it
-    if (!route.permission) return true;
-    // Otherwise check permission
-    return hasPermission(route.permission);
-  });
-
-  // Return base routes plus filtered routes
-  return [...filteredRoutes, ...baseRoutes];
-};
-
-// Export the filtered routes
-const routes = getFilteredRoutes();
 
 export default routes;

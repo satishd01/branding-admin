@@ -41,41 +41,41 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import DatePicker from "@mui/lab/DatePicker";
+import LocalizationProvider from "@mui/lab/LocalizationProvider";
+import AdapterDateFns from "@mui/lab/AdapterDateFns";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
 
-function Banners() {
+function Festivals() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [banners, setBanners] = useState([]);
+  const [festivals, setFestivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
   const [openViewDialog, setOpenViewDialog] = useState(false);
-  const [viewBannerData, setViewBannerData] = useState(null);
+  const [viewFestivalData, setViewFestivalData] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editData, setEditData] = useState({
     id: null,
-    banner_name: "",
-    banner_title: "",
-    image: "",
-    type: "home",
+    festival_name: "",
+    festival_date: new Date(),
+    festival_image: "",
     status: "active",
   });
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
-  const [newBanner, setNewBanner] = useState({
-    banner_name: "",
-    banner_title: "",
-    image: "",
-    type: "home",
+  const [newFestival, setNewFestival] = useState({
+    festival_name: "",
+    festival_date: new Date(),
+    festival_image: "",
     status: "active",
   });
   const [uploading, setUploading] = useState(false);
@@ -85,8 +85,8 @@ function Banners() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    fetchBanners();
-  }, [statusFilter, typeFilter]);
+    fetchFestivals();
+  }, [statusFilter]);
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -96,7 +96,7 @@ function Banners() {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const fetchBanners = async () => {
+  const fetchFestivals = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -106,7 +106,7 @@ function Banners() {
         return;
       }
 
-      let url = `${BASE_URL}/api/banner`;
+      let url = `${BASE_URL}/api/festivals`;
 
       const response = await fetch(url, {
         headers: {
@@ -115,14 +115,14 @@ function Banners() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch banners");
+        throw new Error("Failed to fetch festivals");
       }
 
       const data = await response.json();
-      setBanners(data.data || []);
+      setFestivals(data.data || []);
     } catch (error) {
-      console.error("Error fetching banner data:", error);
-      showSnackbar("Error fetching banners", "error");
+      console.error("Error fetching festival data:", error);
+      showSnackbar("Error fetching festivals", "error");
     } finally {
       setLoading(false);
     }
@@ -164,19 +164,18 @@ function Banners() {
     }
   };
 
-  const handleViewBanner = (banner) => {
-    setViewBannerData(banner);
+  const handleViewFestival = (festival) => {
+    setViewFestivalData(festival);
     setOpenViewDialog(true);
   };
 
-  const handleOpenEditDialog = (banner) => {
+  const handleOpenEditDialog = (festival) => {
     setEditData({
-      id: banner.id,
-      banner_name: banner.banner_name,
-      banner_title: banner.banner_title,
-      image: banner.image,
-      type: banner.type,
-      status: banner.status,
+      id: festival.id,
+      festival_name: festival.festival_name,
+      festival_date: new Date(festival.festival_date),
+      festival_image: festival.festival_image,
+      status: festival.status,
     });
     setOpenEditDialog(true);
   };
@@ -190,7 +189,7 @@ function Banners() {
     setOpenCreateDialog(true);
   };
 
-  const handleUpdateBanner = async () => {
+  const handleUpdateFestival = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -199,29 +198,35 @@ function Banners() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/banner/${editData.id}`, {
+      // Format date to YYYY-MM-DD
+      const formattedDate = editData.festival_date.toISOString().split("T")[0];
+
+      const response = await fetch(`${BASE_URL}/api/festivals/${editData.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editData),
+        body: JSON.stringify({
+          ...editData,
+          festival_date: formattedDate,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update banner");
+        throw new Error("Failed to update festival");
       }
 
-      showSnackbar("Banner updated successfully");
+      showSnackbar("Festival updated successfully");
       setOpenEditDialog(false);
-      fetchBanners();
+      fetchFestivals();
     } catch (error) {
-      console.error("Error updating banner:", error);
-      showSnackbar(error.message || "Error updating banner", "error");
+      console.error("Error updating festival:", error);
+      showSnackbar(error.message || "Error updating festival", "error");
     }
   };
 
-  const handleDeleteBanner = async () => {
+  const handleDeleteFestival = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -230,7 +235,7 @@ function Banners() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/banner/${deleteId}`, {
+      const response = await fetch(`${BASE_URL}/api/festivals/${deleteId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -238,19 +243,19 @@ function Banners() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete banner");
+        throw new Error("Failed to delete festival");
       }
 
-      showSnackbar("Banner deleted successfully");
+      showSnackbar("Festival deleted successfully");
       setOpenDeleteDialog(false);
-      fetchBanners();
+      fetchFestivals();
     } catch (error) {
-      console.error("Error deleting banner:", error);
-      showSnackbar(error.message || "Error deleting banner", "error");
+      console.error("Error deleting festival:", error);
+      showSnackbar(error.message || "Error deleting festival", "error");
     }
   };
 
-  const handleCreateBanner = async () => {
+  const handleCreateFestival = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -259,64 +264,41 @@ function Banners() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/banner`, {
+      // Format date to YYYY-MM-DD
+      const formattedDate = newFestival.festival_date.toISOString().split("T")[0];
+
+      const response = await fetch(`${BASE_URL}/api/festivals`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newBanner),
+        body: JSON.stringify({
+          ...newFestival,
+          festival_date: formattedDate,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create banner");
+        throw new Error("Failed to create festival");
       }
 
-      showSnackbar("Banner created successfully");
+      showSnackbar("Festival created successfully");
       setOpenCreateDialog(false);
-      setNewBanner({
-        banner_name: "",
-        banner_title: "",
-        image: "",
-        type: "home",
+      setNewFestival({
+        festival_name: "",
+        festival_date: new Date(),
+        festival_image: "",
         status: "active",
       });
-      fetchBanners();
+      fetchFestivals();
     } catch (error) {
-      console.error("Error creating banner:", error);
-      showSnackbar(error.message || "Error creating banner", "error");
+      console.error("Error creating festival:", error);
+      showSnackbar(error.message || "Error creating festival", "error");
     }
   };
 
-  // Helper to render a Chip for banner type
-  function getTypeChip(type) {
-    let color = "default";
-    let label = type;
-    switch (type) {
-      case "home":
-        color = "primary";
-        label = "Home";
-        break;
-      case "promo":
-        color = "success";
-        label = "Promo";
-        break;
-      case "category":
-        color = "info";
-        label = "Category";
-        break;
-      case "bottom":
-        color = "secondary";
-        label = "Bottom";
-        break;
-      default:
-        color = "default";
-        label = type;
-    }
-    return <Chip label={label} color={color} size="small" />;
-  }
-
-  // Helper to render a Chip for banner status
+  // Helper to render a Chip for festival status
   function getStatusChip(status) {
     let color = "default";
     let label = status;
@@ -336,8 +318,8 @@ function Banners() {
     return <Chip label={label} color={color} size="small" />;
   }
 
-  // Helper to render banner image
-  function renderBannerImage(filename) {
+  // Helper to render festival image
+  function renderFestivalImage(filename) {
     if (!filename) return <MDTypography variant="caption">No Image</MDTypography>;
 
     return (
@@ -442,17 +424,16 @@ function Banners() {
   // Define columns for DataTable
   const columns = [
     { Header: "ID", accessor: "id" },
-    { Header: "Name", accessor: "banner_name" },
-    { Header: "Title", accessor: "banner_title" },
+    { Header: "Name", accessor: "festival_name" },
     {
-      Header: "Image",
-      accessor: "image",
-      Cell: ({ value }) => renderBannerImage(value),
+      Header: "Date",
+      accessor: "festival_date",
+      Cell: ({ value }) => new Date(value).toLocaleDateString(),
     },
     {
-      Header: "Type",
-      accessor: "type",
-      Cell: ({ value }) => getTypeChip(value),
+      Header: "Image",
+      accessor: "festival_image",
+      Cell: ({ value }) => renderFestivalImage(value),
     },
     {
       Header: "Status",
@@ -470,7 +451,7 @@ function Banners() {
       Cell: (cellProps) => (
         <ActionsColumnCell
           {...cellProps}
-          onView={handleViewBanner}
+          onView={handleViewFestival}
           onEdit={handleOpenEditDialog}
           onDelete={handleOpenDeleteDialog}
         />
@@ -478,17 +459,22 @@ function Banners() {
     },
   ];
 
-  const filteredBanners = banners.filter((banner) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      banner.banner_name.toLowerCase().includes(searchTermLower) ||
-      (banner.banner_title && banner.banner_title.toLowerCase().includes(searchTermLower)) ||
-      banner.id.toString().includes(searchTermLower)
-    );
-  });
+  const filteredFestivals = festivals
+    .filter((festival) => {
+      const searchTermLower = searchTerm.toLowerCase();
+      return (
+        festival.festival_name.toLowerCase().includes(searchTermLower) ||
+        festival.id.toString().includes(searchTermLower) ||
+        new Date(festival.festival_date).toLocaleDateString().includes(searchTermLower)
+      );
+    })
+    .filter((festival) => {
+      if (statusFilter === "all") return true;
+      return festival.status === statusFilter;
+    });
 
   // Apply pagination
-  const paginatedBanners = filteredBanners.slice(
+  const paginatedFestivals = filteredFestivals.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -539,7 +525,7 @@ function Banners() {
                   flexWrap="wrap"
                 >
                   <MDTypography variant="h6" color="black">
-                    Banners Management
+                    Festivals Management
                   </MDTypography>
                   <MDBox display="flex" gap={2} flexWrap="wrap">
                     <FormControl sx={{ minWidth: 120 }} size="small">
@@ -555,23 +541,8 @@ function Banners() {
                         <MenuItem value="inactive">Inactive</MenuItem>
                       </Select>
                     </FormControl>
-                    <FormControl sx={{ minWidth: 120 }} size="small">
-                      <InputLabel>Type</InputLabel>
-                      <Select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        label="Type"
-                        sx={{ width: 150, height: 35 }}
-                      >
-                        <MenuItem value="all">All</MenuItem>
-                        <MenuItem value="home">Home</MenuItem>
-                        <MenuItem value="promo">Promo</MenuItem>
-                        <MenuItem value="category">Category</MenuItem>
-                        <MenuItem value="bottom">Bottom</MenuItem>
-                      </Select>
-                    </FormControl>
                     <TextField
-                      label="Search banners"
+                      label="Search festivals"
                       type="text"
                       fullWidth
                       value={searchTerm}
@@ -589,14 +560,14 @@ function Banners() {
                       startIcon={<AddIcon />}
                       onClick={handleOpenCreateDialog}
                     >
-                      Create Banner
+                      Create Festival
                     </Button>
                   </MDBox>
                 </MDBox>
               </MDBox>
               <MDBox pt={3}>
                 <DataTable
-                  table={{ columns, rows: paginatedBanners }}
+                  table={{ columns, rows: paginatedFestivals }}
                   isSorted={false}
                   entriesPerPage={false}
                   showTotalEntries={false}
@@ -605,7 +576,7 @@ function Banners() {
                 <TablePagination
                   rowsPerPageOptions={[5, 10, 25, 50]}
                   component="div"
-                  count={filteredBanners.length}
+                  count={filteredFestivals.length}
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={handleChangePage}
@@ -617,7 +588,7 @@ function Banners() {
         </Grid>
       </MDBox>
 
-      {/* Banner Details View Dialog */}
+      {/* Festival Details View Dialog */}
       <Dialog
         open={openViewDialog}
         onClose={() => setOpenViewDialog(false)}
@@ -627,14 +598,14 @@ function Banners() {
       >
         <DialogTitle>
           <MDBox display="flex" justifyContent="space-between" alignItems="center">
-            <MDTypography variant="h5">Banner Details</MDTypography>
+            <MDTypography variant="h5">Festival Details</MDTypography>
             <IconButton onClick={() => setOpenViewDialog(false)}>
               <CloseIcon />
             </IconButton>
           </MDBox>
         </DialogTitle>
         <DialogContent dividers>
-          {viewBannerData && (
+          {viewFestivalData && (
             <MDBox>
               <MDBox mb={3}>
                 <MDTypography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
@@ -643,54 +614,52 @@ function Banners() {
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>ID:</strong> {viewBannerData.id}
+                      <strong>ID:</strong> {viewFestivalData.id}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>Name:</strong> {viewBannerData.banner_name}
-                    </MDTypography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <MDTypography>
-                      <strong>Title:</strong> {viewBannerData.banner_title}
-                    </MDTypography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <MDTypography>
-                      <strong>Image:</strong> {viewBannerData.image}
-                    </MDTypography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Box display="flex" justifyContent="center" my={2}>
-                      <CardMedia
-                        component="img"
-                        image={`${BASE_URL}/uploads/${viewBannerData.image}`}
-                        sx={{ width: "100%", maxWidth: 400, height: "auto" }}
-                        alt="Banner Image"
-                      />
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDTypography>
-                      <strong>Type:</strong> {getTypeChip(viewBannerData.type)}
+                      <strong>Name:</strong> {viewFestivalData.festival_name}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>Status:</strong> {getStatusChip(viewBannerData.status)}
+                      <strong>Date:</strong>{" "}
+                      {new Date(viewFestivalData.festival_date).toLocaleDateString()}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <MDTypography>
+                      <strong>Image:</strong> {viewFestivalData.festival_image || "No image"}
+                    </MDTypography>
+                  </Grid>
+                  {viewFestivalData.festival_image && (
+                    <Grid item xs={12}>
+                      <Box display="flex" justifyContent="center" my={2}>
+                        <CardMedia
+                          component="img"
+                          image={`${BASE_URL}/uploads/${viewFestivalData.festival_image}`}
+                          sx={{ width: "100%", maxWidth: 400, height: "auto" }}
+                          alt="Festival Image"
+                        />
+                      </Box>
+                    </Grid>
+                  )}
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Status:</strong> {getStatusChip(viewFestivalData.status)}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12}>
                     <MDTypography>
                       <strong>Created At:</strong>{" "}
-                      {new Date(viewBannerData.created_at).toLocaleString()}
+                      {new Date(viewFestivalData.created_at).toLocaleString()}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12}>
                     <MDTypography>
                       <strong>Updated At:</strong>{" "}
-                      {new Date(viewBannerData.updated_at).toLocaleString()}
+                      {new Date(viewFestivalData.updated_at).toLocaleString()}
                     </MDTypography>
                   </Grid>
                 </Grid>
@@ -705,42 +674,44 @@ function Banners() {
         </DialogActions>
       </Dialog>
 
-      {/* Edit Banner Dialog */}
+      {/* Edit Festival Dialog */}
       <Dialog
         open={openEditDialog}
         onClose={() => setOpenEditDialog(false)}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Edit Banner</DialogTitle>
+        <DialogTitle>Edit Festival</DialogTitle>
         <DialogContent>
           <MDBox mt={2} mb={3}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Banner Name"
+                  label="Festival Name"
                   fullWidth
                   margin="normal"
-                  value={editData.banner_name}
-                  onChange={(e) => setEditData({ ...editData, banner_name: e.target.value })}
+                  value={editData.festival_name}
+                  onChange={(e) => setEditData({ ...editData, festival_name: e.target.value })}
                   required
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="Banner Title"
-                  fullWidth
-                  margin="normal"
-                  value={editData.banner_title}
-                  onChange={(e) => setEditData({ ...editData, banner_title: e.target.value })}
-                  required
-                />
+              <Grid item xs={12}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Festival Date"
+                    value={editData.festival_date}
+                    onChange={(newValue) => {
+                      setEditData({ ...editData, festival_date: newValue });
+                    }}
+                    renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                  />
+                </LocalizationProvider>
               </Grid>
               <Grid item xs={12}>
                 <input
                   accept="image/*"
                   style={{ display: "none" }}
-                  id="edit-banner-upload"
+                  id="edit-festival-upload"
                   type="file"
                   onChange={async (e) => {
                     const file = e.target.files[0];
@@ -749,46 +720,30 @@ function Banners() {
                       if (filename) {
                         setEditData({
                           ...editData,
-                          image: filename,
+                          festival_image: filename,
                         });
                       }
                     }
                   }}
                 />
-                <label htmlFor="edit-banner-upload">
+                <label htmlFor="edit-festival-upload">
                   <Button variant="contained" component="span" startIcon={<AddIcon />}>
                     Upload New Image
                   </Button>
                 </label>
                 {uploading && <CircularProgress size={24} />}
-                {editData.image && (
+                {editData.festival_image && (
                   <Box mt={2}>
                     <CardMedia
                       component="img"
-                      image={`${BASE_URL}/uploads/${editData.image}`}
+                      image={`${BASE_URL}/uploads/${editData.festival_image}`}
                       sx={{ width: 200, height: 100 }}
-                      alt="Banner Preview"
+                      alt="Festival Preview"
                     />
                   </Box>
                 )}
               </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Type</InputLabel>
-                  <Select
-                    value={editData.type}
-                    onChange={(e) => setEditData({ ...editData, type: e.target.value })}
-                    label="Type"
-                    required
-                  >
-                    <MenuItem value="home">Home</MenuItem>
-                    <MenuItem value="promo">Promo</MenuItem>
-                    <MenuItem value="category">Category</MenuItem>
-                    <MenuItem value="bottom">Bottom</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -807,7 +762,7 @@ function Banners() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-          <Button onClick={handleUpdateBanner} color="error" variant="contained">
+          <Button onClick={handleUpdateFestival} color="error" variant="contained">
             Save Changes
           </Button>
         </DialogActions>
@@ -824,19 +779,19 @@ function Banners() {
         <DialogContent>
           <MDBox mt={2} mb={3}>
             <MDTypography>
-              Are you sure you want to delete this banner? This action cannot be undone.
+              Are you sure you want to delete this festival? This action cannot be undone.
             </MDTypography>
           </MDBox>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
-          <Button onClick={handleDeleteBanner} color="error" variant="contained">
+          <Button onClick={handleDeleteFestival} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Create Banner Dialog */}
+      {/* Create Festival Dialog */}
       <Dialog
         open={openCreateDialog}
         onClose={() => setOpenCreateDialog(false)}
@@ -846,7 +801,7 @@ function Banners() {
       >
         <DialogTitle>
           <MDBox display="flex" justifyContent="space-between" alignItems="center">
-            <MDTypography variant="h5">Create New Banner</MDTypography>
+            <MDTypography variant="h5">Create New Festival</MDTypography>
             <IconButton onClick={() => setOpenCreateDialog(false)}>
               <CloseIcon />
             </IconButton>
@@ -855,84 +810,72 @@ function Banners() {
         <DialogContent dividers>
           <MDBox mb={3}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Banner Name"
+                  label="Festival Name"
                   fullWidth
                   margin="normal"
-                  value={newBanner.banner_name}
-                  onChange={(e) => setNewBanner({ ...newBanner, banner_name: e.target.value })}
+                  value={newFestival.festival_name}
+                  onChange={(e) =>
+                    setNewFestival({ ...newFestival, festival_name: e.target.value })
+                  }
                   required
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="Banner Title"
-                  fullWidth
-                  margin="normal"
-                  value={newBanner.banner_title}
-                  onChange={(e) => setNewBanner({ ...newBanner, banner_title: e.target.value })}
-                  required
-                />
+              <Grid item xs={12}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Festival Date"
+                    value={newFestival.festival_date}
+                    onChange={(newValue) => {
+                      setNewFestival({ ...newFestival, festival_date: newValue });
+                    }}
+                    renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                  />
+                </LocalizationProvider>
               </Grid>
               <Grid item xs={12}>
                 <input
                   accept="image/*"
                   style={{ display: "none" }}
-                  id="create-banner-upload"
+                  id="create-festival-upload"
                   type="file"
                   onChange={async (e) => {
                     const file = e.target.files[0];
                     if (file) {
                       const filename = await handleFileUpload(file);
                       if (filename) {
-                        setNewBanner({
-                          ...newBanner,
-                          image: filename,
+                        setNewFestival({
+                          ...newFestival,
+                          festival_image: filename,
                         });
                       }
                     }
                   }}
                 />
-                <label htmlFor="create-banner-upload">
+                <label htmlFor="create-festival-upload">
                   <Button variant="contained" component="span" startIcon={<AddIcon />}>
                     Upload Image
                   </Button>
                 </label>
                 {uploading && <CircularProgress size={24} />}
-                {newBanner.image && (
+                {newFestival.festival_image && (
                   <Box mt={2}>
                     <CardMedia
                       component="img"
-                      image={`${BASE_URL}/uploads/${newBanner.image}`}
+                      image={`${BASE_URL}/uploads/${newFestival.festival_image}`}
                       sx={{ width: 200, height: 100 }}
-                      alt="Banner Preview"
+                      alt="Festival Preview"
                     />
                   </Box>
                 )}
               </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Type</InputLabel>
-                  <Select
-                    value={newBanner.type}
-                    onChange={(e) => setNewBanner({ ...newBanner, type: e.target.value })}
-                    label="Type"
-                    required
-                  >
-                    <MenuItem value="home">Home</MenuItem>
-                    <MenuItem value="promo">Promo</MenuItem>
-                    <MenuItem value="category">Category</MenuItem>
-                    <MenuItem value="bottom">Bottom</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Status</InputLabel>
                   <Select
-                    value={newBanner.status}
-                    onChange={(e) => setNewBanner({ ...newBanner, status: e.target.value })}
+                    value={newFestival.status}
+                    onChange={(e) => setNewFestival({ ...newFestival, status: e.target.value })}
                     label="Status"
                     required
                   >
@@ -946,8 +889,8 @@ function Banners() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenCreateDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateBanner} color="error" variant="contained">
-            Create Banner
+          <Button onClick={handleCreateFestival} color="error" variant="contained">
+            Create Festival
           </Button>
         </DialogActions>
       </Dialog>
@@ -969,4 +912,4 @@ function Banners() {
   );
 }
 
-export default Banners;
+export default Festivals;
