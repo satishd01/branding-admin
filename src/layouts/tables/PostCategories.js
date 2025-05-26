@@ -45,6 +45,68 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
 
+// Define cell components with PropTypes
+const DetailsCell = ({ value }) => (
+  <MDTypography variant="body2" color="textSecondary">
+    {value || "No details provided"}
+  </MDTypography>
+);
+DetailsCell.propTypes = {
+  value: PropTypes.string,
+};
+
+const ImageCell = ({ value }) => {
+  if (!value) return <MDTypography variant="caption">No Image</MDTypography>;
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Avatar
+        src={`${BASE_URL}/uploads/${value}`}
+        variant="rounded"
+        sx={{ width: 80, height: 40 }}
+        style={{ cursor: "pointer" }}
+      />
+    </Box>
+  );
+};
+ImageCell.propTypes = {
+  value: PropTypes.string,
+};
+
+const PostsCell = ({ value = [] }) => (
+  <Chip label={`${value.length} posts`} color="info" size="small" variant="outlined" />
+);
+PostsCell.propTypes = {
+  value: PropTypes.array,
+};
+
+const StatusCell = ({ value }) => {
+  let color = "default";
+  let label = value;
+  switch (value) {
+    case "active":
+      color = "success";
+      label = "Active";
+      break;
+    case "inactive":
+      color = "warning";
+      label = "Inactive";
+      break;
+    default:
+      color = "default";
+      label = value;
+  }
+  return <Chip label={label} color={color} size="small" />;
+};
+StatusCell.propTypes = {
+  value: PropTypes.string,
+};
+
+const CreatedAtCell = ({ value }) => new Date(value).toLocaleString();
+CreatedAtCell.propTypes = {
+  value: PropTypes.string,
+};
+
 function PostCategories() {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -282,49 +344,8 @@ function PostCategories() {
     }
   };
 
-  // Helper to render a Chip for category status
-  function getStatusChip(status) {
-    let color = "default";
-    let label = status;
-    switch (status) {
-      case "active":
-        color = "success";
-        label = "Active";
-        break;
-      case "inactive":
-        color = "warning";
-        label = "Inactive";
-        break;
-      default:
-        color = "default";
-        label = status;
-    }
-    return <Chip label={label} color={color} size="small" />;
-  }
-
-  // Helper to render category image
-  function renderCategoryImage(filename) {
-    if (!filename) return <MDTypography variant="caption">No Image</MDTypography>;
-
-    return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Avatar
-          src={`${BASE_URL}/uploads/${filename}`}
-          variant="rounded"
-          sx={{ width: 80, height: 40 }}
-          style={{ cursor: "pointer" }}
-        />
-      </Box>
-    );
-  }
-
-  // Helper to render posts count
-  function renderPostsCount(posts) {
-    return <Chip label={`${posts.length} posts`} color="info" size="small" variant="outlined" />;
-  }
-
   // Actions column cell component
-  function ActionsColumnCell({ row, onView, onEdit, onDelete }) {
+  function ActionsColumnCell({ row }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
 
@@ -334,6 +355,21 @@ function PostCategories() {
 
     const handleMenuClose = () => {
       setAnchorEl(null);
+    };
+
+    const handleView = () => {
+      handleMenuClose();
+      handleViewCategory(row.original);
+    };
+
+    const handleEdit = () => {
+      handleMenuClose();
+      handleOpenEditDialog(row.original);
+    };
+
+    const handleDelete = () => {
+      handleMenuClose();
+      handleOpenDeleteDialog(row.original.id);
     };
 
     return (
@@ -361,34 +397,19 @@ function PostCategories() {
             horizontal: "right",
           }}
         >
-          <MenuItem
-            onClick={() => {
-              handleMenuClose();
-              onView(row.original);
-            }}
-          >
+          <MenuItem onClick={handleView}>
             <ListItemIcon>
               <VisibilityIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary="View" />
           </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleMenuClose();
-              onEdit(row.original);
-            }}
-          >
+          <MenuItem onClick={handleEdit}>
             <ListItemIcon>
               <EditIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary="Edit" />
           </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleMenuClose();
-              onDelete(row.original.id);
-            }}
-          >
+          <MenuItem onClick={handleDelete}>
             <ListItemIcon>
               <DeleteIcon fontSize="small" />
             </ListItemIcon>
@@ -401,61 +422,46 @@ function PostCategories() {
 
   ActionsColumnCell.propTypes = {
     row: PropTypes.shape({
-      original: PropTypes.shape({
-        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      }).isRequired,
+      original: PropTypes.object.isRequired,
     }).isRequired,
-    onView: PropTypes.func.isRequired,
-    onEdit: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-    value: PropTypes.any, // Ensure value is included
   };
 
   // Define columns for DataTable
   const columns = [
     { Header: "ID", accessor: "id" },
-    { Header: "Name", accessor: "category_name" },
+    {
+      Header: "Name",
+      accessor: "category_name",
+    },
     {
       Header: "Details",
       accessor: "category_details",
-      Cell: ({ value }) => (
-        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-          {value}
-        </Typography>
-      ),
+      Cell: DetailsCell,
     },
     {
       Header: "Image",
       accessor: "category_image",
-      Cell: ({ value }) => renderCategoryImage(value),
+      Cell: ImageCell,
     },
     {
       Header: "Posts",
       accessor: "posts",
-      Cell: ({ value }) => renderPostsCount(value),
+      Cell: PostsCell,
     },
     {
       Header: "Status",
       accessor: "status",
-      Cell: ({ value }) => getStatusChip(value),
+      Cell: StatusCell,
     },
     {
       Header: "Created At",
       accessor: "created_at",
-      Cell: ({ value }) => new Date(value).toLocaleString(),
+      Cell: CreatedAtCell,
     },
     {
       Header: "Actions",
       accessor: "actions",
-      Cell: (cellProps) => (
-        <ActionsColumnCell
-          {...cellProps}
-          onView={handleViewCategory}
-          onEdit={handleOpenEditDialog}
-          onDelete={handleOpenDeleteDialog}
-          value={cellProps.value} // Ensure value is passed
-        />
-      ),
+      Cell: ActionsColumnCell,
     },
   ];
 
@@ -647,7 +653,7 @@ function PostCategories() {
                   )}
                   <Grid item xs={12} md={6}>
                     <MDTypography>
-                      <strong>Status:</strong> {getStatusChip(viewCategoryData.status)}
+                      <strong>Status:</strong> {viewCategoryData.status}
                     </MDTypography>
                   </Grid>
                   <Grid item xs={12}>
