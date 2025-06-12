@@ -2,84 +2,120 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "@mui/material/Card";
 import Switch from "@mui/material/Switch";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
+
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
+
 import bgImage from "assets/images/logos/logo.png";
 import logo from "assets/images/logos/logo.png";
-import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert";
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-function Basic() {
+function SignIn() {
   const [rememberMe, setRememberMe] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
   const BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
-  const handleEmailChange = (e) => setEmail(e.target.value);
-  const handlePasswordChange = (e) => setPassword(e.target.value);
+  const handleToggleRole = () => setIsAdmin(!isAdmin);
 
-  const handleCloseSnackbar = (event, reason) => {
+  const handleCloseSnackbar = (_, reason) => {
     if (reason === "clickaway") return;
     setOpenSnackbar(false);
+  };
+
+  const redirectBasedOnPermissions = (permissions) => {
+    const routeMap = {
+      dashboard: "/dashboard",
+      user_management: "/users",
+      banner_management: "/banners",
+      festival_management: "/festival",
+      card_category: "/business-card-category",
+      post_category: "/post-categories",
+      employee_management: "/employees",
+    };
+
+    if (permissions.dashboard) {
+      navigate("/dashboard");
+      return;
+    }
+
+    const firstAllowed = Object.keys(routeMap).find((key) => permissions[key]);
+    if (firstAllowed) {
+      navigate(routeMap[firstAllowed]);
+    } else {
+      navigate("/no-access");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
+    const apiUrl = isAdmin ? `${BASE_URL}/api/admin/login` : `${BASE_URL}/api/employees/login`;
+
     try {
-      const response = await fetch(`${BASE_URL}/api/admin/login`, {
+      const response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          [isAdmin ? "email" : "emailid"]: email,
+          password,
+        }),
       });
 
-      let data;
       const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        data = await response.json();
-      } else {
-        throw new Error("Invalid server response: not JSON");
+      if (!contentType?.includes("application/json")) {
+        throw new Error("Invalid server response format");
       }
-      setTimeout(() => navigate("/dashboard"), 2000);
-      if (data.status) {
-        // Store token and other values as plain strings
-        localStorage.setItem("token", data.data.token);
-        localStorage.setItem("id", String(data.data.admin.id));
-        localStorage.setItem("email", data.data.admin.email);
-        localStorage.setItem("name", data.data.admin.name);
 
-        setSnackbarMessage(data.message);
+      const data = await response.json();
+
+      if (data.status) {
+        const user = data.data.admin || data.data.employee;
+        const role = data.data.admin ? "admin" : "employee";
+        const permissions = user.permissions || {};
+
+        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("id", String(user.id));
+        localStorage.setItem("email", user.email);
+        localStorage.setItem("name", user.name);
+        localStorage.setItem("role", role);
+        localStorage.setItem("permissions", JSON.stringify(permissions));
+
+        setSnackbarMessage(data.message || "Login successful");
         setSnackbarSeverity("success");
         setOpenSnackbar(true);
 
-        setTimeout(() => navigate("/dashboard"), 2000);
+        setTimeout(() => {
+          if (role === "admin") {
+            navigate("/dashboard");
+          } else {
+            redirectBasedOnPermissions(permissions);
+          }
+        }, 1000);
       } else {
-        setSnackbarMessage(data.message || "Login failed");
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
+        throw new Error(data.message || "Login failed");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setSnackbarMessage("Connection error. Please try again.");
+      setSnackbarMessage(error.message || "Connection error");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     } finally {
@@ -103,22 +139,27 @@ function Basic() {
             boxShadow: "0px 4px 20px rgba(76, 175, 80, 0.3)",
           }}
         >
-          <MDBox mb={5}>
+          <MDBox mb={2}>
             <img src={logo} alt="Logo" style={{ maxWidth: "100px", marginBottom: "5px" }} />
           </MDBox>
           <MDTypography variant="h4" fontWeight="medium" color="dark" mt={1}>
-            Admin Login
+            {isAdmin ? "Admin Login" : "Employee Login"}
           </MDTypography>
+          <MDTypography variant="caption" color="text">
+            Toggle to {isAdmin ? "Employee" : "Admin"} Login
+          </MDTypography>
+          <Switch checked={isAdmin} onChange={handleToggleRole} />
         </MDBox>
+
         <MDBox pt={4} pb={3} px={3}>
-          <MDBox component="form" role="form" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             <MDBox mb={2}>
               <MDInput
                 type="email"
                 label="Email"
                 fullWidth
                 value={email}
-                onChange={handleEmailChange}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </MDBox>
@@ -128,7 +169,7 @@ function Basic() {
                 label="Password"
                 fullWidth
                 value={password}
-                onChange={handlePasswordChange}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </MDBox>
@@ -159,7 +200,7 @@ function Basic() {
                 {isLoading ? "Logging in..." : "Log in"}
               </MDButton>
             </MDBox>
-          </MDBox>
+          </form>
         </MDBox>
       </Card>
 
@@ -172,4 +213,4 @@ function Basic() {
   );
 }
 
-export default Basic;
+export default SignIn;

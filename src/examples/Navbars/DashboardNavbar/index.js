@@ -1,7 +1,22 @@
+/**
+=========================================================
+* Material Dashboard 2 React - v2.2.0
+=========================================================
+
+* Product Page: https://www.creative-tim.com/product/material-dashboard-react
+* Copyright 2023 Creative Tim (https://www.creative-tim.com)
+
+Coded by www.creative-tim.com
+
+ =========================================================
+
+* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+*/
+
 import { useState, useEffect } from "react";
 
 // react-router components
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -13,11 +28,11 @@ import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import Icon from "@mui/material/Icon";
 
-// BLISSIQ ADMIN React components
+// Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDInput from "components/MDInput";
 
-// BLISSIQ ADMIN React example components
+// Material Dashboard 2 React example components
 import Breadcrumbs from "examples/Breadcrumbs";
 import NotificationItem from "examples/Items/NotificationItem";
 
@@ -30,7 +45,7 @@ import {
   navbarMobileMenu,
 } from "examples/Navbars/DashboardNavbar/styles";
 
-// BLISSIQ ADMIN React context
+// Material Dashboard 2 React context
 import {
   useMaterialUIController,
   setTransparentNavbar,
@@ -44,7 +59,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator, darkMode } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
-  const navigate = useNavigate(); // Import and use the navigate function
 
   useEffect(() => {
     // Setting the navbar type
@@ -77,12 +91,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
 
-  // Handle Logout
-  const handleLogout = () => {
-    // Add any additional logout logic here (e.g., clearing user session)
-    navigate("/authentication/sign-in");
-  };
-
   // Render the notifications menu
   const renderMenu = () => (
     <Menu
@@ -108,7 +116,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
       let colorValue = light || darkMode ? white.main : dark.main;
 
       if (transparentNavbar && !light) {
-        colorValue = darkMode ? rgba(text.main, 0) : text.main;
+        colorValue = darkMode ? rgba(text.main, 0.6) : text.main;
       }
 
       return colorValue;
@@ -133,7 +141,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
             <MDBox color={light ? "white" : "inherit"}>
               <Link to="/profile">
                 <IconButton sx={navbarIconButton} size="small" disableRipple>
-                  {/* <Icon sx={iconsStyle}>account_circle</Icon> */}
+                  <Icon sx={iconsStyle}>account_circle</Icon>
                 </IconButton>
               </Link>
               <IconButton
@@ -154,7 +162,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
                 sx={navbarIconButton}
                 onClick={handleConfiguratorOpen}
               >
-                {/* <Icon sx={iconsStyle}>settings</Icon> */}
+                <Icon sx={iconsStyle}>settings</Icon>
               </IconButton>
               <IconButton
                 size="small"
@@ -166,19 +174,9 @@ function DashboardNavbar({ absolute, light, isMini }) {
                 variant="contained"
                 onClick={handleOpenMenu}
               >
-                {/* <Icon sx={iconsStyle}>notifications</Icon> */}
+                <Icon sx={iconsStyle}>notifications</Icon>
               </IconButton>
               {renderMenu()}
-              <IconButton
-                size="small"
-                disableRipple
-                color="inherit"
-                sx={navbarIconButton}
-                onClick={handleLogout}
-              >
-                <Icon sx={iconsStyle}>logout</Icon>
-                <h5>Logout</h5>
-              </IconButton>
             </MDBox>
           </MDBox>
         )}

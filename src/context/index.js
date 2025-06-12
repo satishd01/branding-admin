@@ -134,3 +134,5 @@ export {
   setLayout,
   setDarkMode,
 };
+
+// Set default sidenav color to "black" and background to "white"

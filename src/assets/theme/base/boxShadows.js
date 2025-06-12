@@ -101,7 +101,7 @@ const boxShadows = {
     )}`,
   },
 
-  navbarBoxShadow: `${boxShadow([0, 0], [1, 1], white.main, 0.9, "inset")}, ${boxShadow(
+  navbarBoxShadow: `${boxShadow([0, 0], [1, 1], black.main, 0.9, "inset")}, ${boxShadow(
     [0, 20],
     [27, 0],
     black.main,

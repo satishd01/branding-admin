@@ -59,7 +59,7 @@ const slider = {
     thumb: {
       width: pxToRem(14),
       height: pxToRem(14),
-      backgroundColor: white.main,
+      backgroundColor: black.main,
       zIndex: 10,
       boxShadow: sliderBoxShadow.thumb,
       border: `${borderWidth[1]} solid ${info.main}`,

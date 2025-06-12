@@ -232,7 +232,7 @@ const colors = {
     },
 
     light: {
-      background: "#ffffff",
+      background: "#000000",
       text: "#c7d3de",
     },
 

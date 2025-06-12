@@ -27,6 +27,9 @@ import {
   Alert,
   Divider,
   Paper,
+  Checkbox,
+  FormGroup,
+  FormControlLabel,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -37,6 +40,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
+
 import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,
@@ -47,18 +51,21 @@ import {
   CloudUpload as CloudUploadIcon,
   CheckCircle as CheckCircleIcon,
   Download as DownloadIcon,
+  Lock as LockIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
 } from "@mui/icons-material";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
 
-// Custom color palette
+// Custom color palette with vibrant yet professional colors
 const colors = {
-  primary: "#5e72e4",
-  secondary: "#f7fafc",
-  success: "#2dce89",
-  info: "#11cdef",
-  warning: "#fb6340",
-  danger: "#f5365c",
+  primary: "#5e72e4", // Vibrant blue
+  secondary: "#f7fafc", // Light gray background
+  success: "#2dce89", // Fresh green
+  info: "#11cdef", // Bright cyan
+  warning: "#fb6340", // Orange
+  danger: "#f5365c", // Pinkish red
   light: "#f8f9fa",
   dark: "#212529",
   white: "#ffffff",
@@ -70,59 +77,63 @@ const colors = {
   gradientInfo: "linear-gradient(87deg, #11cdef 0, #1171ef 100%)",
 };
 
-function Users() {
+function Employees() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const [users, setUsers] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [totalCount, setTotalCount] = useState(0);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
   const [openViewDialog, setOpenViewDialog] = useState(false);
-  const [viewUserData, setViewUserData] = useState(null);
+  const [viewEmployeeData, setViewEmployeeData] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editData, setEditData] = useState({
     id: null,
-    mobile_number: "",
-    email: "",
-    profile_image: "",
-    employeeid: "",
+    name: "",
+    emailid: "",
+    image: "",
     password: "",
+    status: "active",
+    permissions: {
+      banners: false,
+      festival: false,
+      businessCardCategory: false,
+      postCategories: false,
+    },
   });
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
-  const [newUser, setNewUser] = useState({
-    mobile_number: "",
-    email: "",
+  const [newEmployee, setNewEmployee] = useState({
+    name: "",
+    emailid: "",
+    image: "",
     password: "",
-    validation_key: "",
-    profile_image: "",
-    employeeid: "",
-  });
-  const [openStatusDialog, setOpenStatusDialog] = useState(false);
-  const [statusData, setStatusData] = useState({
-    id: null,
     status: "active",
+    permissions: {
+      banners: false,
+      festival: false,
+      businessCardCategory: false,
+      postCategories: false,
+    },
   });
   const [uploading, setUploading] = useState(false);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    currentPage: 0,
-    totalPages: 0,
-    rowsPerPage: 10,
-  });
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    fetchUsers();
     fetchEmployees();
-  }, [pagination.currentPage, pagination.rowsPerPage, statusFilter]);
+    fetchEmployeeCount();
+  }, [statusFilter, page, rowsPerPage]);
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -132,7 +143,7 @@ function Users() {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const fetchUsers = async () => {
+  const fetchEmployees = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -142,52 +153,13 @@ function Users() {
         return;
       }
 
-      let url = `${BASE_URL}/api/admin/users?page=${pagination.currentPage + 1}&limit=${
-        pagination.rowsPerPage
-      }`;
+      let url = `${BASE_URL}/api/employees?page=${page + 1}&limit=${rowsPerPage}`;
 
       if (statusFilter !== "all") {
         url += `&status=${statusFilter}`;
       }
 
-      if (searchTerm) {
-        url += `&search=${searchTerm}`;
-      }
-
       const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-
-      const data = await response.json();
-      setUsers(data.data.users || []);
-      setPagination({
-        ...pagination,
-        total: data.data.total,
-        totalPages: data.data.totalPages,
-      });
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      showSnackbar("Error fetching users", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchEmployees = async () => {
-    try {
-      setLoadingEmployees(true);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return;
-      }
-
-      const response = await fetch(`${BASE_URL}/api/employees`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -198,12 +170,35 @@ function Users() {
       }
 
       const data = await response.json();
-      setEmployees(data.data || []);
+      setEmployees(data.employees || []);
+      setTotalCount(data.pagination?.total || 0);
     } catch (error) {
-      console.error("Error fetching employees:", error);
+      console.error("Error fetching employee data:", error);
       showSnackbar("Error fetching employees", "error");
     } finally {
-      setLoadingEmployees(false);
+      setLoading(false);
+    }
+  };
+
+  const fetchEmployeeCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(`${BASE_URL}/api/employees/count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch employee count");
+      }
+
+      const data = await response.json();
+      setTotalCount(data.count || 0);
+    } catch (error) {
+      console.error("Error fetching employee count:", error);
     }
   };
 
@@ -243,29 +238,27 @@ function Users() {
     }
   };
 
-  const handleViewUser = (user) => {
-    setViewUserData(user);
+  const handleViewEmployee = (employee) => {
+    setViewEmployeeData(employee);
     setOpenViewDialog(true);
   };
 
-  const handleOpenEditDialog = (user) => {
+  const handleOpenEditDialog = (employee) => {
     setEditData({
-      id: user.id,
-      mobile_number: user.mobile_number,
-      email: user.email,
-      profile_image: user.profile_image,
-      employeeid: user.employeeid,
-      password: "",
+      id: employee.id,
+      name: employee.name,
+      emailid: employee.emailid,
+      image: employee.image,
+      status: employee.status,
+      password: "", // Don't pre-fill password for security
+      permissions: employee.permission || {
+        banners: false,
+        festival: false,
+        businessCardCategory: false,
+        postCategories: false,
+      },
     });
     setOpenEditDialog(true);
-  };
-
-  const handleOpenStatusDialog = (user) => {
-    setStatusData({
-      id: user.id,
-      status: user.status,
-    });
-    setOpenStatusDialog(true);
   };
 
   const handleOpenDeleteDialog = (id) => {
@@ -277,7 +270,7 @@ function Users() {
     setOpenCreateDialog(true);
   };
 
-  const handleUpdateUserStatus = async () => {
+  const handleUpdateEmployee = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -286,73 +279,42 @@ function Users() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/admin/users/${statusData.id}/status`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: statusData.status,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update user status");
-      }
-
-      showSnackbar("User status updated successfully");
-      setOpenStatusDialog(false);
-      fetchUsers();
-    } catch (error) {
-      console.error("Error updating user status:", error);
-      showSnackbar(error.message || "Error updating user status", "error");
-    }
-  };
-
-  const handleUpdateUser = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        showSnackbar("No token found, please login again", "error");
-        navigate("/authentication/sign-in");
-        return;
-      }
-
-      const payload = {
-        mobile_number: editData.mobile_number,
-        email: editData.email,
-        profile_image: editData.profile_image,
-        employeeid: editData.employeeid,
+      // Only include password in the update if it's been changed
+      const updateData = {
+        name: editData.name,
+        emailid: editData.emailid,
+        image: editData.image,
+        status: editData.status,
+        permissions: editData.permissions,
       };
 
       if (editData.password) {
-        payload.password = editData.password;
+        updateData.password = editData.password;
       }
 
-      const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+      const response = await fetch(`${BASE_URL}/api/employees/${editData.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update user");
+        throw new Error("Failed to update employee");
       }
 
-      showSnackbar("User updated successfully");
+      showSnackbar("Employee updated successfully");
       setOpenEditDialog(false);
-      fetchUsers();
+      fetchEmployees();
     } catch (error) {
-      console.error("Error updating user:", error);
-      showSnackbar(error.message || "Error updating user", "error");
+      console.error("Error updating employee:", error);
+      showSnackbar(error.message || "Error updating employee", "error");
     }
   };
 
-  const handleDeleteUser = async () => {
+  const handleDeleteEmployee = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -361,7 +323,7 @@ function Users() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+      const response = await fetch(`${BASE_URL}/api/employees/${deleteId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -369,19 +331,20 @@ function Users() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete user");
+        throw new Error("Failed to delete employee");
       }
 
-      showSnackbar("User deleted successfully");
+      showSnackbar("Employee deleted successfully");
       setOpenDeleteDialog(false);
-      fetchUsers();
+      fetchEmployees();
+      fetchEmployeeCount();
     } catch (error) {
-      console.error("Error deleting user:", error);
-      showSnackbar(error.message || "Error deleting user", "error");
+      console.error("Error deleting employee:", error);
+      showSnackbar(error.message || "Error deleting employee", "error");
     }
   };
 
-  const handleCreateUser = async () => {
+  const handleCreateEmployee = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -390,37 +353,68 @@ function Users() {
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/auth/register`, {
+      if (!newEmployee.password) {
+        showSnackbar("Password is required", "error");
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/employees`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newUser),
+        body: JSON.stringify(newEmployee),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create user");
+        throw new Error("Failed to create employee");
       }
 
-      showSnackbar("User created successfully");
+      showSnackbar("Employee created successfully");
       setOpenCreateDialog(false);
-      setNewUser({
-        mobile_number: "",
-        email: "",
+      setNewEmployee({
+        name: "",
+        emailid: "",
+        image: "",
         password: "",
-        validation_key: "",
-        profile_image: "",
-        employeeid: "",
+        status: "active",
+        permissions: {
+          banners: false,
+          festival: false,
+          businessCardCategory: false,
+          postCategories: false,
+        },
       });
-      fetchUsers();
+      fetchEmployees();
+      fetchEmployeeCount();
     } catch (error) {
-      console.error("Error creating user:", error);
-      showSnackbar(error.message || "Error creating user", "error");
+      console.error("Error creating employee:", error);
+      showSnackbar(error.message || "Error creating employee", "error");
     }
   };
 
-  // Helper to render a Chip for user status
+  const handlePermissionChange = (field, value, isEdit = false) => {
+    if (isEdit) {
+      setEditData((prev) => ({
+        ...prev,
+        permissions: {
+          ...prev.permissions,
+          [field]: value,
+        },
+      }));
+    } else {
+      setNewEmployee((prev) => ({
+        ...prev,
+        permissions: {
+          ...prev.permissions,
+          [field]: value,
+        },
+      }));
+    }
+  };
+
+  // Helper to render a Chip for employee status
   function getStatusChip(status) {
     let color = "default";
     let label = status;
@@ -453,9 +447,21 @@ function Users() {
     );
   }
 
-  // Helper to render user image
-  function renderUserImage(filename) {
-    if (!filename) return <MDTypography variant="caption">No Image</MDTypography>;
+  // Helper to render employee image
+  function renderEmployeeImage(filename) {
+    if (!filename) {
+      return (
+        <Avatar
+          sx={{
+            width: 40,
+            height: 40,
+            bgcolor: colors.primary,
+          }}
+        >
+          <PersonIcon />
+        </Avatar>
+      );
+    }
 
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -463,9 +469,9 @@ function Users() {
           src={`${BASE_URL}/uploads/${filename}`}
           variant="rounded"
           sx={{
-            width: 80,
+            width: 40,
             height: 40,
-            borderRadius: "8px",
+            borderRadius: "50%",
             boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
             transition: "transform 0.3s ease",
             "&:hover": {
@@ -479,7 +485,7 @@ function Users() {
     );
   }
 
-  function ActionsColumnCell({ row, onView, onEdit, onStatus, onDelete }) {
+  function ActionsColumnCell({ row, onView, onEdit, onDelete }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
 
@@ -571,25 +577,6 @@ function Users() {
           <MenuItem
             onClick={() => {
               handleMenuClose();
-              onStatus(row.original);
-            }}
-            sx={{
-              "&:hover": {
-                backgroundColor: "rgba(255, 193, 7, 0.1)",
-              },
-            }}
-          >
-            <ListItemIcon>
-              <EditIcon fontSize="small" sx={{ color: colors.warning }} />
-            </ListItemIcon>
-            <ListItemText
-              primary="Status"
-              primaryTypographyProps={{ color: colors.textPrimary, fontSize: "0.875rem" }}
-            />
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleMenuClose();
               onDelete(row.original.id);
             }}
             sx={{
@@ -615,7 +602,6 @@ function Users() {
     row: PropTypes.object.isRequired,
     onView: PropTypes.func.isRequired,
     onEdit: PropTypes.func.isRequired,
-    onStatus: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
   };
 
@@ -641,19 +627,19 @@ function Users() {
     value: PropTypes.string.isRequired,
   };
 
-  function DateCell({ value }) {
+  function EmailCell({ value }) {
     return (
       <MDTypography variant="caption" color={colors.textPrimary}>
-        {new Date(value).toLocaleDateString()}
+        {value}
       </MDTypography>
     );
   }
-  DateCell.propTypes = {
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.instanceOf(Date)]),
+  EmailCell.propTypes = {
+    value: PropTypes.string.isRequired,
   };
 
   function ImageCell({ value }) {
-    return renderUserImage(value);
+    return renderEmployeeImage(value);
   }
   ImageCell.propTypes = {
     value: PropTypes.string,
@@ -666,6 +652,17 @@ function Users() {
     value: PropTypes.string.isRequired,
   };
 
+  function CreatedAtCell({ value }) {
+    return (
+      <MDTypography variant="caption" color={colors.textSecondary}>
+        {new Date(value).toLocaleDateString()}
+      </MDTypography>
+    );
+  }
+  CreatedAtCell.propTypes = {
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.instanceOf(Date)]),
+  };
+
   const columns = [
     {
       Header: "ID",
@@ -674,28 +671,22 @@ function Users() {
       Cell: IdCell,
     },
     {
-      Header: "Mobile",
-      accessor: "mobile_number",
-      width: "15%",
-      Cell: NameCell,
+      Header: "Image",
+      accessor: "image",
+      Cell: ImageCell,
+      width: "10%",
     },
     {
-      Header: "Email",
-      accessor: "email",
+      Header: "Name",
+      accessor: "name",
       width: "20%",
       Cell: NameCell,
     },
     {
-      Header: "Employee ID",
-      accessor: "employeeid",
-      width: "15%",
-      Cell: NameCell,
-    },
-    {
-      Header: "Image",
-      accessor: "profile_image",
-      Cell: ImageCell,
-      width: "15%",
+      Header: "Email",
+      accessor: "emailid",
+      width: "25%",
+      Cell: EmailCell,
     },
     {
       Header: "Status",
@@ -706,7 +697,7 @@ function Users() {
     {
       Header: "Created At",
       accessor: "created_at",
-      Cell: DateCell,
+      Cell: CreatedAtCell,
       width: "15%",
     },
     {
@@ -715,38 +706,23 @@ function Users() {
       Cell: (cellProps) => (
         <ActionsColumnCell
           {...cellProps}
-          onView={handleViewUser}
+          onView={handleViewEmployee}
           onEdit={handleOpenEditDialog}
-          onStatus={handleOpenStatusDialog}
           onDelete={handleOpenDeleteDialog}
         />
       ),
-      width: "20%",
+      width: "15%",
     },
   ];
 
-  const filteredUsers = users.filter((user) => {
+  const filteredEmployees = employees.filter((employee) => {
     const searchTermLower = searchTerm.toLowerCase();
     return (
-      user.mobile_number.toLowerCase().includes(searchTermLower) ||
-      user.email.toLowerCase().includes(searchTermLower) ||
-      user.employeeid.toLowerCase().includes(searchTermLower) ||
-      user.id.toString().includes(searchTermLower)
+      employee.name.toLowerCase().includes(searchTermLower) ||
+      employee.emailid.toLowerCase().includes(searchTermLower) ||
+      employee.id.toString().includes(searchTermLower)
     );
   });
-
-  // Pagination handlers
-  const handleChangePage = (event, newPage) => {
-    setPagination({ ...pagination, currentPage: newPage });
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setPagination({
-      ...pagination,
-      rowsPerPage: parseInt(event.target.value, 10),
-      currentPage: 0,
-    });
-  };
 
   if (loading) {
     return (
@@ -815,7 +791,7 @@ function Users() {
                       letterSpacing: "0.5px",
                     }}
                   >
-                    Users Management
+                    Employees Management
                   </MDTypography>
                   <MDBox display="flex" gap={2} flexWrap="wrap" alignItems="center">
                     <FormControl sx={{ minWidth: 120 }} size="small">
@@ -866,16 +842,11 @@ function Users() {
                       </Select>
                     </FormControl>
                     <TextField
-                      label="Search users..."
+                      label="Search employees..."
                       type="text"
                       fullWidth
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          fetchUsers();
-                        }
-                      }}
                       sx={{
                         width: { xs: "100%", sm: 200 },
                         [theme.breakpoints.down("sm")]: {
@@ -926,7 +897,7 @@ function Users() {
                         minWidth: "140px",
                       }}
                     >
-                      New User
+                      New Employee
                     </Button>
                   </MDBox>
                 </MDBox>
@@ -943,9 +914,9 @@ function Users() {
                   <DataTable
                     table={{
                       columns,
-                      rows: filteredUsers.map((user) => ({
-                        ...user,
-                        created_at: new Date(user.created_at).toLocaleDateString(),
+                      rows: filteredEmployees.map((employee) => ({
+                        ...employee,
+                        created_at: new Date(employee.created_at).toLocaleDateString(),
                       })),
                     }}
                     isSorted={false}
@@ -982,11 +953,14 @@ function Users() {
                   <TablePagination
                     rowsPerPageOptions={[5, 10, 25, 50]}
                     component="div"
-                    count={pagination.total}
-                    rowsPerPage={pagination.rowsPerPage}
-                    page={pagination.currentPage}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    count={totalCount}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={(e, newPage) => setPage(newPage)}
+                    onRowsPerPageChange={(e) => {
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                    }}
                     sx={{
                       borderTop: "1px solid rgba(0,0,0,0.05)",
                       "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
@@ -1002,7 +976,7 @@ function Users() {
         </Grid>
       </MDBox>
 
-      {/* User Details View Dialog */}
+      {/* Employee Details View Dialog */}
       <Dialog
         open={openViewDialog}
         onClose={() => setOpenViewDialog(false)}
@@ -1028,7 +1002,7 @@ function Users() {
           }}
         >
           <MDTypography variant="h5" color={colors.white}>
-            User Details
+            Employee Details
           </MDTypography>
           <IconButton
             onClick={() => setOpenViewDialog(false)}
@@ -1043,7 +1017,7 @@ function Users() {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ backgroundColor: colors.secondary }}>
-          {viewUserData && (
+          {viewEmployeeData && (
             <MDBox>
               <MDBox mb={3}>
                 <MDTypography
@@ -1058,7 +1032,7 @@ function Users() {
                   }}
                 >
                   <CheckCircleIcon fontSize="small" />
-                  User Information
+                  Employee Information
                 </MDTypography>
                 <Divider sx={{ my: 1 }} />
                 <Grid container spacing={3} mt={1}>
@@ -1074,7 +1048,7 @@ function Users() {
                         ID
                       </MDTypography>
                       <MDTypography variant="body2" color={colors.textPrimary}>
-                        {viewUserData.id}
+                        {viewEmployeeData.id}
                       </MDTypography>
                     </MDBox>
                   </Grid>
@@ -1087,10 +1061,10 @@ function Users() {
                         display="block"
                         mb={0.5}
                       >
-                        Mobile Number
+                        Name
                       </MDTypography>
                       <MDTypography variant="body2" color={colors.textPrimary}>
-                        {viewUserData.mobile_number}
+                        {viewEmployeeData.name}
                       </MDTypography>
                     </MDBox>
                   </Grid>
@@ -1106,8 +1080,22 @@ function Users() {
                         Email
                       </MDTypography>
                       <MDTypography variant="body2" color={colors.textPrimary}>
-                        {viewUserData.email}
+                        {viewEmployeeData.emailid}
                       </MDTypography>
+                    </MDBox>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDBox mb={2}>
+                      <MDTypography
+                        variant="caption"
+                        color={colors.textSecondary}
+                        fontWeight="bold"
+                        display="block"
+                        mb={0.5}
+                      >
+                        Status
+                      </MDTypography>
+                      {getStatusChip(viewEmployeeData.status)}
                     </MDBox>
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -1122,8 +1110,75 @@ function Users() {
                         Employee ID
                       </MDTypography>
                       <MDTypography variant="body2" color={colors.textPrimary}>
-                        {viewUserData.employeeid}
+                        {viewEmployeeData.employeeid || "N/A"}
                       </MDTypography>
+                    </MDBox>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDBox mb={2}>
+                      <MDTypography
+                        variant="caption"
+                        color={colors.textSecondary}
+                        fontWeight="bold"
+                        display="block"
+                        mb={0.5}
+                      >
+                        Created At
+                      </MDTypography>
+                      <MDTypography variant="body2" color={colors.textPrimary}>
+                        {new Date(viewEmployeeData.created_at).toLocaleDateString()}
+                      </MDTypography>
+                    </MDBox>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <MDBox mb={2}>
+                      <MDTypography
+                        variant="caption"
+                        color={colors.textSecondary}
+                        fontWeight="bold"
+                        display="block"
+                        mb={0.5}
+                      >
+                        Permissions
+                      </MDTypography>
+                      <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
+                        {viewEmployeeData.permission && (
+                          <>
+                            <Chip
+                              label="Banners"
+                              color={viewEmployeeData.permission.banners ? "success" : "default"}
+                              variant={viewEmployeeData.permission.banners ? "filled" : "outlined"}
+                            />
+                            <Chip
+                              label="Festival"
+                              color={viewEmployeeData.permission.festival ? "success" : "default"}
+                              variant={viewEmployeeData.permission.festival ? "filled" : "outlined"}
+                            />
+                            <Chip
+                              label="Business Card Category"
+                              color={
+                                viewEmployeeData.permission.businessCardCategory
+                                  ? "success"
+                                  : "default"
+                              }
+                              variant={
+                                viewEmployeeData.permission.businessCardCategory
+                                  ? "filled"
+                                  : "outlined"
+                              }
+                            />
+                            <Chip
+                              label="Post Categories"
+                              color={
+                                viewEmployeeData.permission.postCategories ? "success" : "default"
+                              }
+                              variant={
+                                viewEmployeeData.permission.postCategories ? "filled" : "outlined"
+                              }
+                            />
+                          </>
+                        )}
+                      </Box>
                     </MDBox>
                   </Grid>
                   <Grid item xs={12}>
@@ -1148,86 +1203,55 @@ function Users() {
                           backgroundColor: colors.white,
                         }}
                       >
-                        <CardMedia
-                          component="img"
-                          image={`${BASE_URL}/uploads/${viewUserData.profile_image}`}
-                          sx={{
-                            width: "100%",
-                            maxWidth: 400,
-                            height: "auto",
-                            borderRadius: "8px",
-                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                          }}
-                          alt="User Image"
-                        />
+                        {viewEmployeeData.image ? (
+                          <CardMedia
+                            component="img"
+                            image={`${BASE_URL}/uploads/${viewEmployeeData.image}`}
+                            sx={{
+                              width: "100%",
+                              maxWidth: 200,
+                              height: "auto",
+                              borderRadius: "8px",
+                              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                            }}
+                            alt="Employee Image"
+                          />
+                        ) : (
+                          <Avatar
+                            sx={{
+                              width: 80,
+                              height: 80,
+                              bgcolor: colors.primary,
+                              fontSize: 40,
+                            }}
+                          >
+                            <PersonIcon fontSize="inherit" />
+                          </Avatar>
+                        )}
                       </Box>
-                      <Box display="flex" justifyContent="center" mt={2}>
-                        <IconButton
-                          onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = `${BASE_URL}/uploads/${viewUserData.profile_image}`;
-                            link.download = viewUserData.profile_image;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                          sx={{
-                            background: colors.gradientSuccess,
-                            color: colors.white,
-                            "&:hover": {
-                              background: "linear-gradient(87deg, #2dce89 0, #2dce89 100%)",
-                            },
-                          }}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Box>
-                    </MDBox>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDBox mb={2}>
-                      <MDTypography
-                        variant="caption"
-                        color={colors.textSecondary}
-                        fontWeight="bold"
-                        display="block"
-                        mb={0.5}
-                      >
-                        Status
-                      </MDTypography>
-                      {getStatusChip(viewUserData.status || "active")}
-                    </MDBox>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDBox mb={2}>
-                      <MDTypography
-                        variant="caption"
-                        color={colors.textSecondary}
-                        fontWeight="bold"
-                        display="block"
-                        mb={0.5}
-                      >
-                        Created At
-                      </MDTypography>
-                      <MDTypography variant="body2" color={colors.textPrimary}>
-                        {new Date(viewUserData.created_at).toLocaleDateString()}
-                      </MDTypography>
-                    </MDBox>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDBox mb={2}>
-                      <MDTypography
-                        variant="caption"
-                        color={colors.textSecondary}
-                        fontWeight="bold"
-                        display="block"
-                        mb={0.5}
-                      >
-                        Updated At
-                      </MDTypography>
-                      <MDTypography variant="body2" color={colors.textPrimary}>
-                        {new Date(viewUserData.updated_at).toLocaleDateString()}
-                      </MDTypography>
+                      {viewEmployeeData.image && (
+                        <Box display="flex" justifyContent="center" mt={2}>
+                          <IconButton
+                            onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = `${BASE_URL}/uploads/${viewEmployeeData.image}`;
+                              link.download = viewEmployeeData.image;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            sx={{
+                              background: colors.gradientSuccess,
+                              color: colors.white,
+                              "&:hover": {
+                                background: "linear-gradient(87deg, #2dce89 0, #2dce89 100%)",
+                              },
+                            }}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Box>
+                      )}
                     </MDBox>
                   </Grid>
                 </Grid>
@@ -1256,7 +1280,7 @@ function Users() {
         </DialogActions>
       </Dialog>
 
-      {/* Edit User Dialog */}
+      {/* Edit Employee Dialog */}
       <Dialog
         open={openEditDialog}
         onClose={() => setOpenEditDialog(false)}
@@ -1281,7 +1305,7 @@ function Users() {
           }}
         >
           <MDTypography variant="h5" color={colors.white}>
-            Edit User
+            Edit Employee
           </MDTypography>
           <IconButton
             onClick={() => setOpenEditDialog(false)}
@@ -1300,11 +1324,11 @@ function Users() {
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <TextField
-                  label="Mobile Number"
+                  label="Name"
                   fullWidth
                   margin="normal"
-                  value={editData.mobile_number}
-                  onChange={(e) => setEditData({ ...editData, mobile_number: e.target.value })}
+                  value={editData.name}
+                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                   required
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -1327,9 +1351,8 @@ function Users() {
                   label="Email"
                   fullWidth
                   margin="normal"
-                  type="email"
-                  value={editData.email}
-                  onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                  value={editData.emailid}
+                  onChange={(e) => setEditData({ ...editData, emailid: e.target.value })}
                   required
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -1347,61 +1370,6 @@ function Users() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="New Password"
-                  fullWidth
-                  margin="normal"
-                  type="password"
-                  value={editData.password}
-                  onChange={(e) => setEditData({ ...editData, password: e.target.value })}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      "& fieldset": {
-                        borderColor: "rgba(0,0,0,0.1)",
-                      },
-                      "&:hover fieldset": {
-                        borderColor: colors.primary,
-                      },
-                      "&.Mui-focused fieldset": {
-                        borderColor: colors.primary,
-                        boxShadow: `0 0 0 2px ${colors.primary}20`,
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Employee ID</InputLabel>
-                  <Select
-                    value={editData.employeeid}
-                    onChange={(e) => setEditData({ ...editData, employeeid: e.target.value })}
-                    label="Employee ID"
-                    required
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        "& fieldset": {
-                          borderColor: "rgba(0,0,0,0.1)",
-                        },
-                        "&:hover fieldset": {
-                          borderColor: colors.primary,
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: colors.primary,
-                          boxShadow: `0 0 0 2px ${colors.primary}20`,
-                        },
-                      },
-                    }}
-                  >
-                    {employees.map((employee) => (
-                      <MenuItem key={employee.id} value={employee.employeeid}>
-                        {employee.employeeid}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
               <Grid item xs={12}>
                 <MDBox mt={2} mb={1}>
                   <MDTypography
@@ -1411,12 +1379,12 @@ function Users() {
                     display="block"
                     mb={1}
                   >
-                    Profile Image
+                    Employee Image
                   </MDTypography>
                   <input
                     accept="image/*"
                     style={{ display: "none" }}
-                    id="edit-user-upload"
+                    id="edit-employee-upload"
                     type="file"
                     onChange={async (e) => {
                       const file = e.target.files[0];
@@ -1425,13 +1393,13 @@ function Users() {
                         if (filename) {
                           setEditData({
                             ...editData,
-                            profile_image: filename,
+                            image: filename,
                           });
                         }
                       }
                     }}
                   />
-                  <label htmlFor="edit-user-upload">
+                  <label htmlFor="edit-employee-upload">
                     <Button
                       variant="contained"
                       component="span"
@@ -1463,7 +1431,7 @@ function Users() {
                     />
                   )}
                 </MDBox>
-                {editData.profile_image && (
+                {editData.image && (
                   <Box mt={2}>
                     <Paper
                       elevation={0}
@@ -1477,18 +1445,145 @@ function Users() {
                     >
                       <CardMedia
                         component="img"
-                        image={`${BASE_URL}/uploads/${editData.profile_image}`}
+                        image={`${BASE_URL}/uploads/${editData.image}`}
                         sx={{
-                          width: 200,
-                          height: 100,
-                          borderRadius: "6px",
+                          width: 120,
+                          height: 120,
+                          borderRadius: "50%",
                           boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                         }}
-                        alt="User Preview"
+                        alt="Employee Preview"
                       />
                     </Paper>
                   </Box>
                 )}
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Password"
+                  fullWidth
+                  margin="normal"
+                  type={showPassword ? "text" : "password"}
+                  value={editData.password}
+                  onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton
+                        onClick={() => setShowPassword((show) => !show)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword ? <VisibilityIcon /> : <LockIcon />}
+                      </IconButton>
+                    ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
+                        borderColor: "rgba(0,0,0,0.1)",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: colors.primary,
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: colors.primary,
+                        boxShadow: `0 0 0 2px ${colors.primary}20`,
+                      },
+                    },
+                  }}
+                  helperText="Leave blank to keep current password"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={editData.status}
+                    onChange={(e) => setEditData({ ...editData, status: e.target.value })}
+                    label="Status"
+                    required
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        "& fieldset": {
+                          borderColor: "rgba(0,0,0,0.1)",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: colors.primary,
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: colors.primary,
+                          boxShadow: `0 0 0 2px ${colors.primary}20`,
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <MDBox mt={2}>
+                  <MDTypography
+                    variant="caption"
+                    color={colors.textSecondary}
+                    fontWeight="bold"
+                    display="block"
+                    mb={1}
+                  >
+                    Permissions
+                  </MDTypography>
+                  <FormGroup row>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={editData.permissions.banners}
+                          onChange={(e) =>
+                            handlePermissionChange("banners", e.target.checked, true)
+                          }
+                          color="primary"
+                        />
+                      }
+                      label="Banners"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={editData.permissions.festival}
+                          onChange={(e) =>
+                            handlePermissionChange("festival", e.target.checked, true)
+                          }
+                          color="primary"
+                        />
+                      }
+                      label="Festival"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={editData.permissions.businessCardCategory}
+                          onChange={(e) =>
+                            handlePermissionChange("businessCardCategory", e.target.checked, true)
+                          }
+                          color="primary"
+                        />
+                      }
+                      label="Business Card Category"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={editData.permissions.postCategories}
+                          onChange={(e) =>
+                            handlePermissionChange("postCategories", e.target.checked, true)
+                          }
+                          color="primary"
+                        />
+                      }
+                      label="Post Categories"
+                    />
+                  </FormGroup>
+                </MDBox>
               </Grid>
             </Grid>
           </MDBox>
@@ -1511,7 +1606,7 @@ function Users() {
             Cancel
           </Button>
           <Button
-            onClick={handleUpdateUser}
+            onClick={handleUpdateEmployee}
             variant="contained"
             sx={{
               background: colors.gradientSuccess,
@@ -1527,113 +1622,6 @@ function Users() {
             }}
           >
             Save Changes
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Update Status Dialog */}
-      <Dialog
-        open={openStatusDialog}
-        onClose={() => setOpenStatusDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: "12px",
-            overflow: "hidden",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            background: colors.gradientInfo,
-            color: colors.white,
-            padding: "16px 24px",
-            fontWeight: "bold",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <MDTypography variant="h5" color={colors.white}>
-            Update User Status
-          </MDTypography>
-          <IconButton
-            onClick={() => setOpenStatusDialog(false)}
-            sx={{
-              color: colors.white,
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-              },
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ backgroundColor: colors.secondary }}>
-          <MDBox mt={3} mb={2}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusData.status}
-                onChange={(e) => setStatusData({ ...statusData, status: e.target.value })}
-                label="Status"
-                required
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": {
-                      borderColor: "rgba(0,0,0,0.1)",
-                    },
-                    "&:hover fieldset": {
-                      borderColor: colors.primary,
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: colors.primary,
-                      boxShadow: `0 0 0 2px ${colors.primary}20`,
-                    },
-                  },
-                }}
-              >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
-          </MDBox>
-        </DialogContent>
-        <DialogActions sx={{ backgroundColor: colors.secondary, padding: "16px 24px" }}>
-          <Button
-            onClick={() => setOpenStatusDialog(false)}
-            sx={{
-              color: colors.textSecondary,
-              fontWeight: "bold",
-              textTransform: "none",
-              borderRadius: "6px",
-              border: "1px solid rgba(0,0,0,0.1)",
-              padding: "8px 24px",
-              "&:hover": {
-                backgroundColor: "rgba(0,0,0,0.02)",
-              },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUpdateUserStatus}
-            variant="contained"
-            sx={{
-              background: colors.gradientSuccess,
-              "&:hover": {
-                background: "linear-gradient(87deg, #2dce89 0, #2dce89 100%)",
-              },
-              fontWeight: "bold",
-              textTransform: "none",
-              borderRadius: "6px",
-              padding: "8px 24px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              ml: 2,
-            }}
-          >
-            Update Status
           </Button>
         </DialogActions>
       </Dialog>
@@ -1689,7 +1677,7 @@ function Users() {
               }}
             >
               <DeleteIcon color="error" />
-              Are you sure you want to delete this user? This action cannot be undone.
+              Are you sure you want to delete this employee? This action cannot be undone.
             </MDTypography>
           </MDBox>
         </DialogContent>
@@ -1711,7 +1699,7 @@ function Users() {
             Cancel
           </Button>
           <Button
-            onClick={handleDeleteUser}
+            onClick={handleDeleteEmployee}
             variant="contained"
             sx={{
               background: colors.gradientDanger,
@@ -1731,7 +1719,7 @@ function Users() {
         </DialogActions>
       </Dialog>
 
-      {/* Create User Dialog */}
+      {/* Create Employee Dialog */}
       <Dialog
         open={openCreateDialog}
         onClose={() => setOpenCreateDialog(false)}
@@ -1757,7 +1745,7 @@ function Users() {
           }}
         >
           <MDTypography variant="h5" color={colors.white}>
-            Create New User
+            Create New Employee
           </MDTypography>
           <IconButton
             onClick={() => setOpenCreateDialog(false)}
@@ -1776,11 +1764,11 @@ function Users() {
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <TextField
-                  label="Mobile Number"
+                  label="Name"
                   fullWidth
                   margin="normal"
-                  value={newUser.mobile_number}
-                  onChange={(e) => setNewUser({ ...newUser, mobile_number: e.target.value })}
+                  value={newEmployee.name}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
                   required
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -1803,9 +1791,8 @@ function Users() {
                   label="Email"
                   fullWidth
                   margin="normal"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  value={newEmployee.emailid}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, emailid: e.target.value })}
                   required
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -1822,86 +1809,6 @@ function Users() {
                     },
                   }}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="Password"
-                  fullWidth
-                  margin="normal"
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  required
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      "& fieldset": {
-                        borderColor: "rgba(0,0,0,0.1)",
-                      },
-                      "&:hover fieldset": {
-                        borderColor: colors.primary,
-                      },
-                      "&.Mui-focused fieldset": {
-                        borderColor: colors.primary,
-                        boxShadow: `0 0 0 2px ${colors.primary}20`,
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="Validation Key"
-                  fullWidth
-                  margin="normal"
-                  value={newUser.validation_key}
-                  onChange={(e) => setNewUser({ ...newUser, validation_key: e.target.value })}
-                  required
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      "& fieldset": {
-                        borderColor: "rgba(0,0,0,0.1)",
-                      },
-                      "&:hover fieldset": {
-                        borderColor: colors.primary,
-                      },
-                      "&.Mui-focused fieldset": {
-                        borderColor: colors.primary,
-                        boxShadow: `0 0 0 2px ${colors.primary}20`,
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Employee ID</InputLabel>
-                  <Select
-                    value={newUser.employeeid}
-                    onChange={(e) => setNewUser({ ...newUser, employeeid: e.target.value })}
-                    label="Employee ID"
-                    required
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        "& fieldset": {
-                          borderColor: "rgba(0,0,0,0.1)",
-                        },
-                        "&:hover fieldset": {
-                          borderColor: colors.primary,
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: colors.primary,
-                          boxShadow: `0 0 0 2px ${colors.primary}20`,
-                        },
-                      },
-                    }}
-                  >
-                    {employees.map((employee) => (
-                      <MenuItem key={employee.id} value={employee.employeeid}>
-                        {employee.employeeid}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
               </Grid>
               <Grid item xs={12}>
                 <MDBox mt={2} mb={1}>
@@ -1912,27 +1819,27 @@ function Users() {
                     display="block"
                     mb={1}
                   >
-                    Profile Image
+                    Employee Image
                   </MDTypography>
                   <input
                     accept="image/*"
                     style={{ display: "none" }}
-                    id="create-user-upload"
+                    id="create-employee-upload"
                     type="file"
                     onChange={async (e) => {
                       const file = e.target.files[0];
                       if (file) {
                         const filename = await handleFileUpload(file);
                         if (filename) {
-                          setNewUser({
-                            ...newUser,
-                            profile_image: filename,
+                          setNewEmployee({
+                            ...newEmployee,
+                            image: filename,
                           });
                         }
                       }
                     }}
                   />
-                  <label htmlFor="create-user-upload">
+                  <label htmlFor="create-employee-upload">
                     <Button
                       variant="contained"
                       component="span"
@@ -1964,7 +1871,7 @@ function Users() {
                     />
                   )}
                 </MDBox>
-                {newUser.profile_image && (
+                {newEmployee.image && (
                   <Box mt={2}>
                     <Paper
                       elevation={0}
@@ -1978,18 +1885,141 @@ function Users() {
                     >
                       <CardMedia
                         component="img"
-                        image={`${BASE_URL}/uploads/${newUser.profile_image}`}
+                        image={`${BASE_URL}/uploads/${newEmployee.image}`}
                         sx={{
-                          width: 200,
-                          height: 100,
-                          borderRadius: "6px",
+                          width: 120,
+                          height: 120,
+                          borderRadius: "50%",
                           boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                         }}
-                        alt="User Preview"
+                        alt="Employee Preview"
                       />
                     </Paper>
                   </Box>
                 )}
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Password"
+                  fullWidth
+                  margin="normal"
+                  type={showPassword ? "text" : "password"}
+                  value={newEmployee.password}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton
+                        onClick={() => setShowPassword((show) => !show)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword ? <VisibilityIcon /> : <LockIcon />}
+                      </IconButton>
+                    ),
+                  }}
+                  required
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
+                        borderColor: "rgba(0,0,0,0.1)",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: colors.primary,
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: colors.primary,
+                        boxShadow: `0 0 0 2px ${colors.primary}20`,
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={newEmployee.status}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, status: e.target.value })}
+                    label="Status"
+                    required
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        "& fieldset": {
+                          borderColor: "rgba(0,0,0,0.1)",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: colors.primary,
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: colors.primary,
+                          boxShadow: `0 0 0 2px ${colors.primary}20`,
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <MDBox mt={2}>
+                  <MDTypography
+                    variant="caption"
+                    color={colors.textSecondary}
+                    fontWeight="bold"
+                    display="block"
+                    mb={1}
+                  >
+                    Permissions
+                  </MDTypography>
+                  <FormGroup row>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={newEmployee.permissions.banners}
+                          onChange={(e) => handlePermissionChange("banners", e.target.checked)}
+                          color="primary"
+                        />
+                      }
+                      label="Banners"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={newEmployee.permissions.festival}
+                          onChange={(e) => handlePermissionChange("festival", e.target.checked)}
+                          color="primary"
+                        />
+                      }
+                      label="Festival"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={newEmployee.permissions.businessCardCategory}
+                          onChange={(e) =>
+                            handlePermissionChange("businessCardCategory", e.target.checked)
+                          }
+                          color="primary"
+                        />
+                      }
+                      label="Business Card Category"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={newEmployee.permissions.postCategories}
+                          onChange={(e) =>
+                            handlePermissionChange("postCategories", e.target.checked)
+                          }
+                          color="primary"
+                        />
+                      }
+                      label="Post Categories"
+                    />
+                  </FormGroup>
+                </MDBox>
               </Grid>
             </Grid>
           </MDBox>
@@ -2012,7 +2042,7 @@ function Users() {
             Cancel
           </Button>
           <Button
-            onClick={handleCreateUser}
+            onClick={handleCreateEmployee}
             variant="contained"
             sx={{
               background: colors.gradientSuccess,
@@ -2027,7 +2057,7 @@ function Users() {
               ml: 2,
             }}
           >
-            Create User
+            Create Employee
           </Button>
         </DialogActions>
       </Dialog>
@@ -2068,4 +2098,4 @@ function Users() {
   );
 }
 
-export default Users;
+export default Employees;
