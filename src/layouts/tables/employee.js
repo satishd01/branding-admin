@@ -125,6 +125,7 @@ function Employees() {
   });
   const [uploading, setUploading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Make sure viewEmployeeData is only used inside this component
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -202,6 +203,33 @@ function Employees() {
     }
   };
 
+  const fetchEmployeeById = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showSnackbar("No token found, please login again", "error");
+        navigate("/authentication/sign-in");
+        return null;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/employees/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch employee details");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching employee details:", error);
+      showSnackbar(error.message || "Error fetching employee details", "error");
+      return null;
+    }
+  };
+
   const handleFileUpload = async (file) => {
     try {
       setUploading(true);
@@ -238,27 +266,43 @@ function Employees() {
     }
   };
 
-  const handleViewEmployee = (employee) => {
-    setViewEmployeeData(employee);
-    setOpenViewDialog(true);
+  const handleViewEmployee = async (employee) => {
+    try {
+      // Fetch the latest employee data including permissions
+      const employeeData = await fetchEmployeeById(employee.id);
+      if (employeeData) {
+        setViewEmployeeData(employeeData);
+        setOpenViewDialog(true);
+      }
+    } catch (error) {
+      console.error("Error fetching employee details:", error);
+    }
   };
 
-  const handleOpenEditDialog = (employee) => {
-    setEditData({
-      id: employee.id,
-      name: employee.name,
-      emailid: employee.emailid,
-      image: employee.image,
-      status: employee.status,
-      password: "", // Don't pre-fill password for security
-      permissions: employee.permission || {
-        banners: false,
-        festival: false,
-        businessCardCategory: false,
-        postCategories: false,
-      },
-    });
-    setOpenEditDialog(true);
+  const handleOpenEditDialog = async (employee) => {
+    try {
+      // Fetch the latest employee data including permissions
+      const employeeData = await fetchEmployeeById(employee.id);
+      if (employeeData) {
+        setEditData({
+          id: employeeData.id,
+          name: employeeData.name,
+          emailid: employeeData.emailid,
+          image: employeeData.image,
+          status: employeeData.status,
+          password: "", // Don't pre-fill password for security
+          permissions: employeeData.permission || {
+            banners: false,
+            festival: false,
+            businessCardCategory: false,
+            postCategories: false,
+          },
+        });
+        setOpenEditDialog(true);
+      }
+    } catch (error) {
+      console.error("Error fetching employee details:", error);
+    }
   };
 
   const handleOpenDeleteDialog = (id) => {
@@ -1142,27 +1186,29 @@ function Employees() {
                         Permissions
                       </MDTypography>
                       <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
-                        {viewEmployeeData.permission && (
+                        {viewEmployeeData.permissions && (
                           <>
                             <Chip
                               label="Banners"
-                              color={viewEmployeeData.permission.banners ? "success" : "default"}
-                              variant={viewEmployeeData.permission.banners ? "filled" : "outlined"}
+                              color={viewEmployeeData.permissions.banners ? "success" : "default"}
+                              variant={viewEmployeeData.permissions.banners ? "filled" : "outlined"}
                             />
                             <Chip
                               label="Festival"
-                              color={viewEmployeeData.permission.festival ? "success" : "default"}
-                              variant={viewEmployeeData.permission.festival ? "filled" : "outlined"}
+                              color={viewEmployeeData.permissions.festival ? "success" : "default"}
+                              variant={
+                                viewEmployeeData.permissions.festival ? "filled" : "outlined"
+                              }
                             />
                             <Chip
                               label="Business Card Category"
                               color={
-                                viewEmployeeData.permission.businessCardCategory
+                                viewEmployeeData.permissions.businessCardCategory
                                   ? "success"
                                   : "default"
                               }
                               variant={
-                                viewEmployeeData.permission.businessCardCategory
+                                viewEmployeeData.permissions.businessCardCategory
                                   ? "filled"
                                   : "outlined"
                               }
@@ -1170,10 +1216,10 @@ function Employees() {
                             <Chip
                               label="Post Categories"
                               color={
-                                viewEmployeeData.permission.postCategories ? "success" : "default"
+                                viewEmployeeData.permissions.postCategories ? "success" : "default"
                               }
                               variant={
-                                viewEmployeeData.permission.postCategories ? "filled" : "outlined"
+                                viewEmployeeData.permissions.postCategories ? "filled" : "outlined"
                               }
                             />
                           </>
@@ -2097,5 +2143,4 @@ function Employees() {
     </DashboardLayout>
   );
 }
-
 export default Employees;

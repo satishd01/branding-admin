@@ -110,6 +110,7 @@ function Users() {
   const [statusData, setStatusData] = useState({
     id: null,
     status: "active",
+    duration: "3 months", // Added duration field
   });
   const [uploading, setUploading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -264,6 +265,7 @@ function Users() {
     setStatusData({
       id: user.id,
       status: user.status,
+      duration: "3 months", // Default duration
     });
     setOpenStatusDialog(true);
   };
@@ -294,6 +296,7 @@ function Users() {
         },
         body: JSON.stringify({
           status: statusData.status,
+          duration: statusData.duration,
         }),
       });
 
@@ -301,7 +304,8 @@ function Users() {
         throw new Error("Failed to update user status");
       }
 
-      showSnackbar("User status updated successfully");
+      const data = await response.json();
+      showSnackbar(data.message || "User status updated successfully");
       setOpenStatusDialog(false);
       fetchUsers();
     } catch (error) {
@@ -730,7 +734,7 @@ function Users() {
     return (
       user.mobile_number.toLowerCase().includes(searchTermLower) ||
       user.email.toLowerCase().includes(searchTermLower) ||
-      user.employeeid.toLowerCase().includes(searchTermLower) ||
+      (user.employeeid && user.employeeid.toLowerCase().includes(searchTermLower)) ||
       user.id.toString().includes(searchTermLower)
     );
   });
@@ -1122,7 +1126,7 @@ function Users() {
                         Employee ID
                       </MDTypography>
                       <MDTypography variant="body2" color={colors.textPrimary}>
-                        {viewUserData.employeeid}
+                        {viewUserData.employeeid || "N/A"}
                       </MDTypography>
                     </MDBox>
                   </Grid>
@@ -1148,40 +1152,48 @@ function Users() {
                           backgroundColor: colors.white,
                         }}
                       >
-                        <CardMedia
-                          component="img"
-                          image={`${BASE_URL}/uploads/${viewUserData.profile_image}`}
-                          sx={{
-                            width: "100%",
-                            maxWidth: 400,
-                            height: "auto",
-                            borderRadius: "8px",
-                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                          }}
-                          alt="User Image"
-                        />
+                        {viewUserData.profile_image ? (
+                          <CardMedia
+                            component="img"
+                            image={`${BASE_URL}/uploads/${viewUserData.profile_image}`}
+                            sx={{
+                              width: "100%",
+                              maxWidth: 400,
+                              height: "auto",
+                              borderRadius: "8px",
+                              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                            }}
+                            alt="User Image"
+                          />
+                        ) : (
+                          <MDTypography variant="body2" color={colors.textSecondary}>
+                            No image available
+                          </MDTypography>
+                        )}
                       </Box>
-                      <Box display="flex" justifyContent="center" mt={2}>
-                        <IconButton
-                          onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = `${BASE_URL}/uploads/${viewUserData.profile_image}`;
-                            link.download = viewUserData.profile_image;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                          sx={{
-                            background: colors.gradientSuccess,
-                            color: colors.white,
-                            "&:hover": {
-                              background: "linear-gradient(87deg, #2dce89 0, #2dce89 100%)",
-                            },
-                          }}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Box>
+                      {viewUserData.profile_image && (
+                        <Box display="flex" justifyContent="center" mt={2}>
+                          <IconButton
+                            onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = `${BASE_URL}/uploads/${viewUserData.profile_image}`;
+                              link.download = viewUserData.profile_image;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            sx={{
+                              background: colors.gradientSuccess,
+                              color: colors.white,
+                              "&:hover": {
+                                background: "linear-gradient(87deg, #2dce89 0, #2dce89 100%)",
+                              },
+                            }}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Box>
+                      )}
                     </MDBox>
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -1214,22 +1226,42 @@ function Users() {
                       </MDTypography>
                     </MDBox>
                   </Grid>
-                  <Grid item xs={12} md={6}>
-                    <MDBox mb={2}>
-                      <MDTypography
-                        variant="caption"
-                        color={colors.textSecondary}
-                        fontWeight="bold"
-                        display="block"
-                        mb={0.5}
-                      >
-                        Updated At
-                      </MDTypography>
-                      <MDTypography variant="body2" color={colors.textPrimary}>
-                        {new Date(viewUserData.updated_at).toLocaleDateString()}
-                      </MDTypography>
-                    </MDBox>
-                  </Grid>
+                  {viewUserData.starting_date && (
+                    <Grid item xs={12} md={6}>
+                      <MDBox mb={2}>
+                        <MDTypography
+                          variant="caption"
+                          color={colors.textSecondary}
+                          fontWeight="bold"
+                          display="block"
+                          mb={0.5}
+                        >
+                          Starting Date
+                        </MDTypography>
+                        <MDTypography variant="body2" color={colors.textPrimary}>
+                          {new Date(viewUserData.starting_date).toLocaleDateString()}
+                        </MDTypography>
+                      </MDBox>
+                    </Grid>
+                  )}
+                  {viewUserData.ending_date && (
+                    <Grid item xs={12} md={6}>
+                      <MDBox mb={2}>
+                        <MDTypography
+                          variant="caption"
+                          color={colors.textSecondary}
+                          fontWeight="bold"
+                          display="block"
+                          mb={0.5}
+                        >
+                          Ending Date
+                        </MDTypography>
+                        <MDTypography variant="body2" color={colors.textPrimary}>
+                          {new Date(viewUserData.ending_date).toLocaleDateString()}
+                        </MDTypography>
+                      </MDBox>
+                    </Grid>
+                  )}
                 </Grid>
               </MDBox>
             </MDBox>
@@ -1572,32 +1604,66 @@ function Users() {
         </DialogTitle>
         <DialogContent sx={{ backgroundColor: colors.secondary }}>
           <MDBox mt={3} mb={2}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusData.status}
-                onChange={(e) => setStatusData({ ...statusData, status: e.target.value })}
-                label="Status"
-                required
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": {
-                      borderColor: "rgba(0,0,0,0.1)",
-                    },
-                    "&:hover fieldset": {
-                      borderColor: colors.primary,
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: colors.primary,
-                      boxShadow: `0 0 0 2px ${colors.primary}20`,
-                    },
-                  },
-                }}
-              >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={statusData.status}
+                    onChange={(e) => setStatusData({ ...statusData, status: e.target.value })}
+                    label="Status"
+                    required
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        "& fieldset": {
+                          borderColor: "rgba(0,0,0,0.1)",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: colors.primary,
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: colors.primary,
+                          boxShadow: `0 0 0 2px ${colors.primary}20`,
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Duration</InputLabel>
+                  <Select
+                    value={statusData.duration}
+                    onChange={(e) => setStatusData({ ...statusData, duration: e.target.value })}
+                    label="Duration"
+                    required
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        "& fieldset": {
+                          borderColor: "rgba(0,0,0,0.1)",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: colors.primary,
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: colors.primary,
+                          boxShadow: `0 0 0 2px ${colors.primary}20`,
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="1 month">1 Month</MenuItem>
+                    <MenuItem value="3 months">3 Months</MenuItem>
+                    <MenuItem value="6 months">6 Months</MenuItem>
+                    <MenuItem value="1 year">1 Year</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
           </MDBox>
         </DialogContent>
         <DialogActions sx={{ backgroundColor: colors.secondary, padding: "16px 24px" }}>

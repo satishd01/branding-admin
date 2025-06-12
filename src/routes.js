@@ -13,6 +13,7 @@ import Icon from "@mui/material/Icon";
 
 // Get user role and permissions from localStorage
 const getUserRole = () => localStorage.getItem("role");
+
 const getPermissions = () => {
   try {
     const raw = localStorage.getItem("permissions");
@@ -22,7 +23,7 @@ const getPermissions = () => {
   }
 };
 
-// Base routes like sign-in
+// Base routes like sign-in (no permissions needed)
 const baseRoutes = [
   {
     route: "/authentication/sign-in",
@@ -30,7 +31,7 @@ const baseRoutes = [
   },
 ];
 
-// All application routes (can assign permission keys)
+// All application routes (filtered by role & permissions)
 const allRoutes = [
   {
     type: "collapse",
@@ -47,7 +48,7 @@ const allRoutes = [
     icon: <Icon fontSize="small">group</Icon>,
     route: "/users",
     component: <Hosts />,
-    permission: "user_management",
+    permission: "users", // Optional: restrict to admin if needed
   },
   {
     type: "collapse",
@@ -56,7 +57,7 @@ const allRoutes = [
     icon: <Icon fontSize="small">collections</Icon>,
     route: "/banners",
     component: <Banner />,
-    permission: "banner_management",
+    permission: "banners",
   },
   {
     type: "collapse",
@@ -65,7 +66,7 @@ const allRoutes = [
     icon: <Icon fontSize="small">celebration</Icon>,
     route: "/festival",
     component: <Festival />,
-    permission: "festival_management",
+    permission: "festival",
   },
   {
     type: "collapse",
@@ -74,7 +75,7 @@ const allRoutes = [
     icon: <Icon fontSize="small">contact_mail</Icon>,
     route: "/business-card-category",
     component: <BusinessCardCategory />,
-    permission: "card_category",
+    permission: "businessCardCategory",
   },
   {
     type: "collapse",
@@ -83,7 +84,7 @@ const allRoutes = [
     icon: <Icon fontSize="small">bookmark</Icon>,
     route: "/post-categories",
     component: <PostCategories />,
-    permission: "post_category",
+    permission: "postCategories",
   },
   {
     type: "collapse",
@@ -92,7 +93,7 @@ const allRoutes = [
     icon: <Icon fontSize="small">work</Icon>,
     route: "/employees",
     component: <Employees />,
-    permission: "employee_management",
+    permission: "employees", // Optional: admin only
   },
 ];
 
@@ -101,13 +102,14 @@ const getFilteredRoutes = () => {
   const role = getUserRole();
   const permissions = getPermissions();
 
-  // If admin → return all routes
   if (role === "admin") {
+    // Admin sees all routes
     return [...allRoutes, ...baseRoutes];
   }
 
-  // If employee → filter by permission keys
+  // Employee: filter routes based on permissions
   const filtered = allRoutes.filter((route) => {
+    // If no permission key, allow access
     if (!route.permission) return true;
     return permissions[route.permission] === true;
   });
@@ -115,6 +117,6 @@ const getFilteredRoutes = () => {
   return [...filtered, ...baseRoutes];
 };
 
+// Export filtered routes
 const routes = getFilteredRoutes();
-
 export default routes;
