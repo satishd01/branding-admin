@@ -23,7 +23,7 @@ const getPermissions = () => {
   }
 };
 
-// Base routes like sign-in (no permissions needed)
+// Routes that don't require permissions
 const baseRoutes = [
   {
     route: "/authentication/sign-in",
@@ -31,7 +31,7 @@ const baseRoutes = [
   },
 ];
 
-// All application routes (filtered by role & permissions)
+// All app routes (with optional permission keys)
 const allRoutes = [
   {
     type: "collapse",
@@ -48,7 +48,7 @@ const allRoutes = [
     icon: <Icon fontSize="small">group</Icon>,
     route: "/users",
     component: <Hosts />,
-    permission: "users", // Optional: restrict to admin if needed
+    permission: "users", // only shown to admin
   },
   {
     type: "collapse",
@@ -93,30 +93,30 @@ const allRoutes = [
     icon: <Icon fontSize="small">work</Icon>,
     route: "/employees",
     component: <Employees />,
-    permission: "employees", // Optional: admin only
+    permission: "employees", // optional
   },
 ];
 
-// Final filtering logic
+// Filter routes based on role and permission
 const getFilteredRoutes = () => {
   const role = getUserRole();
   const permissions = getPermissions();
 
   if (role === "admin") {
-    // Admin sees all routes
     return [...allRoutes, ...baseRoutes];
   }
 
-  // Employee: filter routes based on permissions
+  // For employee: filter routes based on permissions
   const filtered = allRoutes.filter((route) => {
-    // If no permission key, allow access
+    // No permission key = allow access
     if (!route.permission) return true;
+
+    // permission key present = must be true in employee permissions
     return permissions[route.permission] === true;
   });
 
   return [...filtered, ...baseRoutes];
 };
 
-// Export filtered routes
 const routes = getFilteredRoutes();
 export default routes;
