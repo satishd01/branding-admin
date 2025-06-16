@@ -7,6 +7,7 @@ import Festival from "layouts/tables/festival";
 import BusinessCardCategory from "layouts/tables/BusinessCardCategory";
 import PostCategories from "layouts/tables/PostCategories";
 import Employees from "layouts/tables/employee";
+import Frames from "layouts/tables/Frames";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -94,6 +95,14 @@ const allRoutes = [
     route: "/employees",
     component: <Employees />,
     permission: "employees", // optional
+  },
+  {
+    type: "collapse",
+    name: "Frames",
+    key: "frames",
+    icon: <Icon fontSize="small">photo_frame</Icon>,
+    route: "/frames",
+    component: <Frames />,
   },
 ];
 
