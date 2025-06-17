@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   IconButton,
   Tooltip,
+  Chip,
   Box,
   CircularProgress,
   MenuItem,
@@ -12,63 +13,56 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  Button,
-  Grid,
-  Card,
   Avatar,
-  CardMedia,
-  Snackbar,
-  Alert,
   Divider,
-  Paper,
+  Badge,
+  Switch,
+  FormControlLabel,
+  DialogContentText,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import PropTypes from "prop-types";
+import Grid from "@mui/material/Grid";
+import Card from "@mui/material/Card";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
-import {
-  Visibility as VisibilityIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Close as CloseIcon,
-  MoreVert as MoreVertIcon,
-  CloudUpload as CloudUploadIcon,
-  CheckCircle as CheckCircleIcon,
-  Download as DownloadIcon,
-} from "@mui/icons-material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
+import AddIcon from "@mui/icons-material/Add";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import CollectionsIcon from "@mui/icons-material/Collections";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import PhoneIcon from "@mui/icons-material/Phone";
+import EmailIcon from "@mui/icons-material/Email";
+import BadgeIcon from "@mui/icons-material/Badge";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import EventBusyIcon from "@mui/icons-material/EventBusy";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
 
-// Custom color palette
-const colors = {
-  primary: "#5e72e4",
-  secondary: "#f7fafc",
-  success: "#2dce89",
-  info: "#11cdef",
-  warning: "#fb6340",
-  danger: "#f5365c",
-  light: "#f8f9fa",
-  dark: "#212529",
-  white: "#ffffff",
-  textPrimary: "#32325d",
-  textSecondary: "#525f7f",
-  gradientPrimary: "linear-gradient(87deg, #5e72e4 0, #825ee4 100%)",
-  gradientSuccess: "linear-gradient(87deg, #2dce89 0, #2dcecc 100%)",
-  gradientDanger: "linear-gradient(87deg, #f5365c 0, #f56036 100%)",
-  gradientInfo: "linear-gradient(87deg, #11cdef 0, #1171ef 100%)",
-};
+const DURATION_OPTIONS = [
+  { value: "1 month", label: "1 Month" },
+  { value: "3 months", label: "3 Months" },
+  { value: "6 months", label: "6 Months" },
+  { value: "1 year", label: "1 Year" },
+];
 
 function Users() {
   const navigate = useNavigate();
@@ -78,7 +72,6 @@ function Users() {
   const [loading, setLoading] = useState(true);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -88,47 +81,74 @@ function Users() {
   const [viewUserData, setViewUserData] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [editData, setEditData] = useState({
-    id: null,
-    username: "",
-    mobile_number: "",
-    email: "",
-    profile_image: "",
-    employeeid: "",
-    password: "",
-    validation_key: "",
-  });
-  const [openCreateDialog, setOpenCreateDialog] = useState(false);
-  const [newUser, setNewUser] = useState({
-    username: "",
-    mobile_number: "",
-    email: "",
-    password: "",
-    validation_key: "",
-    profile_image: "",
-    employeeid: "",
-  });
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
   const [statusData, setStatusData] = useState({
     id: null,
     status: "active",
     duration: "3 months",
-    paymentAmount: "",
-    paymentMode: "",
+  });
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [newUser, setNewUser] = useState({
+    mobile_number: "",
+    email: "",
+    password: "",
+    validation_key: "",
+    profile_image: "",
+    employeeid: "",
+    username: "",
   });
   const [uploading, setUploading] = useState(false);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    currentPage: 0,
-    totalPages: 0,
-    rowsPerPage: 10,
-  });
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchUsers();
-    fetchEmployees();
-  }, [pagination.currentPage, pagination.rowsPerPage, statusFilter]);
+  }, [page, rowsPerPage]);
+
+  useEffect(() => {
+    if (openCreateDialog) {
+      fetchEmployees();
+    }
+  }, [openCreateDialog]);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoadingEmployees(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showSnackbar("No token found, please login again", "error");
+        navigate("/authentication/sign-in");
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/employees`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch employees");
+      }
+
+      const result = await response.json();
+
+      if (!result.employees || !Array.isArray(result.employees)) {
+        throw new Error("Invalid data structure from API");
+      }
+
+      setEmployees(result.employees);
+    } catch (error) {
+      console.error("Error fetching employee data:", error);
+      showSnackbar(error.message || "Error fetching employees", "error");
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -148,68 +168,33 @@ function Users() {
         return;
       }
 
-      let url = `${BASE_URL}/api/admin/users?page=${pagination.currentPage + 1}&limit=${
-        pagination.rowsPerPage
-      }`;
-
-      if (statusFilter !== "all") {
-        url += `&status=${statusFilter}`;
-      }
-
-      if (searchTerm) {
-        url += `&search=${searchTerm}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${BASE_URL}/api/admin/users?page=${page + 1}&limit=${rowsPerPage}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
 
-      const data = await response.json();
-      setUsers(data.data.users || []);
-      setPagination({
-        ...pagination,
-        total: data.data.total,
-        totalPages: data.data.totalPages,
-      });
+      const result = await response.json();
+
+      if (!result.status || !result.data || !Array.isArray(result.data.users)) {
+        throw new Error("Invalid data structure from API");
+      }
+
+      setUsers(result.data.users);
+      setTotalUsers(result.data.total || result.data.users.length);
+      setTotalPages(result.data.totalPages || Math.ceil(result.data.users.length / rowsPerPage));
     } catch (error) {
       console.error("Error fetching user data:", error);
-      showSnackbar("Error fetching users", "error");
+      showSnackbar(error.message || "Error fetching users", "error");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchEmployees = async () => {
-    try {
-      setLoadingEmployees(true);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return;
-      }
-
-      const response = await fetch(`${BASE_URL}/api/employees`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch employees");
-      }
-
-      const data = await response.json();
-      setEmployees(data.data || []);
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-      showSnackbar("Error fetching employees", "error");
-    } finally {
-      setLoadingEmployees(false);
     }
   };
 
@@ -254,27 +239,11 @@ function Users() {
     setOpenViewDialog(true);
   };
 
-  const handleOpenEditDialog = (user) => {
-    setEditData({
-      id: user.id,
-      username: user.username || "",
-      mobile_number: user.mobile_number,
-      email: user.email,
-      profile_image: user.profile_image,
-      employeeid: user.employeeid || "",
-      password: "",
-      validation_key: user.validation_key,
-    });
-    setOpenEditDialog(true);
-  };
-
   const handleOpenStatusDialog = (user) => {
     setStatusData({
       id: user.id,
       status: user.status,
       duration: "3 months",
-      paymentAmount: user.paymentAmount || "",
-      paymentMode: user.paymentMode || "",
     });
     setOpenStatusDialog(true);
   };
@@ -288,7 +257,7 @@ function Users() {
     setOpenCreateDialog(true);
   };
 
-  const handleUpdateUserStatus = async () => {
+  const handleUpdateStatus = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -306,8 +275,6 @@ function Users() {
         body: JSON.stringify({
           status: statusData.status,
           duration: statusData.duration,
-          paymentAmount: statusData.paymentAmount,
-          paymentMode: statusData.paymentMode,
         }),
       });
 
@@ -315,57 +282,18 @@ function Users() {
         throw new Error("Failed to update user status");
       }
 
-      const data = await response.json();
-      showSnackbar(data.message || "User status updated successfully");
+      const result = await response.json();
+
+      if (!result.status) {
+        throw new Error(result.message || "Failed to update user status");
+      }
+
+      showSnackbar("User status updated successfully");
       setOpenStatusDialog(false);
       fetchUsers();
     } catch (error) {
       console.error("Error updating user status:", error);
       showSnackbar(error.message || "Error updating user status", "error");
-    }
-  };
-
-  const handleUpdateUser = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        showSnackbar("No token found, please login again", "error");
-        navigate("/authentication/sign-in");
-        return;
-      }
-
-      const payload = {
-        username: editData.username,
-        mobile_number: editData.mobile_number,
-        email: editData.email,
-        profile_image: editData.profile_image,
-        employeeid: editData.employeeid,
-        validation_key: editData.validation_key,
-      };
-
-      if (editData.password) {
-        payload.password = editData.password;
-      }
-
-      const response = await fetch(`${BASE_URL}/api/admin/users/${editData.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update user");
-      }
-
-      showSnackbar("User updated successfully");
-      setOpenEditDialog(false);
-      fetchUsers();
-    } catch (error) {
-      console.error("Error updating user:", error);
-      showSnackbar(error.message || "Error updating user", "error");
     }
   };
 
@@ -378,25 +306,26 @@ function Users() {
         return;
       }
 
-      const userToDelete = users.find((user) => user.id === deleteId);
-      if (!userToDelete) {
-        throw new Error("User not found");
+      if (!deleteId) {
+        showSnackbar("No user selected for deletion", "error");
+        return;
       }
 
-      const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+      const response = await fetch(`${BASE_URL}/api/admin/users/${deleteId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          employeeid: userToDelete.employeeid,
-          validation_key: userToDelete.validation_key,
-        }),
       });
 
       if (!response.ok) {
         throw new Error("Failed to delete user");
+      }
+
+      const result = await response.json();
+
+      if (!result.status) {
+        throw new Error(result.message || "Failed to delete user");
       }
 
       showSnackbar("User deleted successfully");
@@ -430,16 +359,22 @@ function Users() {
         throw new Error("Failed to create user");
       }
 
+      const result = await response.json();
+
+      if (!result.message || !result.user) {
+        throw new Error("Invalid response from server");
+      }
+
       showSnackbar("User created successfully");
       setOpenCreateDialog(false);
       setNewUser({
-        username: "",
         mobile_number: "",
         email: "",
         password: "",
         validation_key: "",
         profile_image: "",
         employeeid: "",
+        username: "",
       });
       fetchUsers();
     } catch (error) {
@@ -448,64 +383,55 @@ function Users() {
     }
   };
 
-  function getStatusChip(status) {
-    let color = "default";
-    let label = status;
+  const getStatusChip = (status) => {
     switch (status) {
       case "active":
-        color = "success";
-        label = "Active";
-        break;
+        return <Chip label="Active" color="success" size="small" />;
       case "inactive":
-        color = "danger";
-        label = "Inactive";
-        break;
+        return <Chip label="Inactive" color="error" size="small" />;
       default:
-        color = "default";
-        label = status;
+        return <Chip label="Unknown" size="small" />;
     }
+  };
+
+  const ImageCell = ({ value }) => {
+    if (!value) return <MDTypography variant="caption">No Image</MDTypography>;
+
     return (
-      <Chip
-        label={label}
-        sx={{
-          background: status === "active" ? colors.gradientSuccess : colors.gradientDanger,
-          color: colors.white,
-          fontWeight: "bold",
-          fontSize: "0.7rem",
-          height: "24px",
-          borderRadius: "4px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        }}
+      <Avatar
+        src={`${BASE_URL}/uploads/${value}`}
+        variant="rounded"
+        sx={{ width: 40, height: 40 }}
+        style={{ cursor: "pointer" }}
       />
     );
-  }
+  };
 
-  function renderUserImage(filename) {
-    if (!filename) return <MDTypography variant="caption">No Image</MDTypography>;
+  ImageCell.propTypes = {
+    value: PropTypes.string,
+  };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const searchTermLower = searchTerm.toLowerCase();
     return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Avatar
-          src={`${BASE_URL}/uploads/${filename}`}
-          variant="rounded"
-          sx={{
-            width: 80,
-            height: 40,
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-            transition: "transform 0.3s ease",
-            "&:hover": {
-              transform: "scale(1.05)",
-              cursor: "pointer",
-            },
-          }}
-          onClick={() => window.open(`${BASE_URL}/uploads/${filename}`, "_blank")}
-        />
-      </Box>
+      (user.username && user.username.toLowerCase().includes(searchTermLower)) ||
+      user.mobile_number.toLowerCase().includes(searchTermLower) ||
+      user.email.toLowerCase().includes(searchTermLower) ||
+      (user.employeeid && user.employeeid.toLowerCase().includes(searchTermLower)) ||
+      user.id.toString().includes(searchTermLower)
     );
-  }
+  });
 
-  function ActionsColumnCell({ row, onView, onEdit, onStatus, onDelete }) {
+  const ActionsCell = ({ row }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
 
@@ -521,21 +447,15 @@ function Users() {
       <>
         <IconButton
           aria-label="more"
-          aria-controls="actions-menu"
+          aria-controls={`actions-menu-${row.id}`}
           aria-haspopup="true"
           onClick={handleMenuOpen}
           size="small"
-          sx={{
-            color: colors.primary,
-            "&:hover": {
-              backgroundColor: "rgba(94, 114, 228, 0.1)",
-            },
-          }}
         >
           <MoreVertIcon />
         </IconButton>
         <Menu
-          id="actions-menu"
+          id={`actions-menu-${row.id}`}
           anchorEl={anchorEl}
           open={open}
           onClose={handleMenuClose}
@@ -547,259 +467,87 @@ function Users() {
             vertical: "top",
             horizontal: "right",
           }}
-          PaperProps={{
-            style: {
-              minWidth: "160px",
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-              borderRadius: "8px",
-              border: "1px solid rgba(0,0,0,0.05)",
-            },
-          }}
         >
           <MenuItem
             onClick={() => {
               handleMenuClose();
-              onView(row.original);
-            }}
-            sx={{
-              "&:hover": {
-                backgroundColor: "rgba(17, 205, 239, 0.1)",
-              },
+              handleViewUser(row.original);
             }}
           >
             <ListItemIcon>
-              <VisibilityIcon fontSize="small" sx={{ color: colors.info }} />
+              <VisibilityIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText
-              primary="View"
-              primaryTypographyProps={{ color: colors.textPrimary, fontSize: "0.875rem" }}
-            />
+            <ListItemText primary="View" />
           </MenuItem>
           <MenuItem
             onClick={() => {
               handleMenuClose();
-              onEdit(row.original);
-            }}
-            sx={{
-              "&:hover": {
-                backgroundColor: "rgba(94, 114, 228, 0.1)",
-              },
+              handleOpenStatusDialog(row.original);
             }}
           >
             <ListItemIcon>
-              <EditIcon fontSize="small" sx={{ color: colors.primary }} />
+              <EditIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText
-              primary="Edit"
-              primaryTypographyProps={{ color: colors.textPrimary, fontSize: "0.875rem" }}
-            />
+            <ListItemText primary="Update Status" />
           </MenuItem>
           <MenuItem
             onClick={() => {
               handleMenuClose();
-              onStatus(row.original);
-            }}
-            sx={{
-              "&:hover": {
-                backgroundColor: "rgba(255, 193, 7, 0.1)",
-              },
+              handleOpenDeleteDialog(row.original.id);
             }}
           >
             <ListItemIcon>
-              <EditIcon fontSize="small" sx={{ color: colors.warning }} />
+              <DeleteIcon fontSize="small" color="error" />
             </ListItemIcon>
-            <ListItemText
-              primary="Status"
-              primaryTypographyProps={{ color: colors.textPrimary, fontSize: "0.875rem" }}
-            />
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleMenuClose();
-              onDelete(row.original.id);
-            }}
-            sx={{
-              "&:hover": {
-                backgroundColor: "rgba(245, 54, 92, 0.1)",
-              },
-            }}
-          >
-            <ListItemIcon>
-              <DeleteIcon fontSize="small" sx={{ color: colors.danger }} />
-            </ListItemIcon>
-            <ListItemText
-              primary="Delete"
-              primaryTypographyProps={{ color: colors.textPrimary, fontSize: "0.875rem" }}
-            />
+            <ListItemText primary="Delete" />
           </MenuItem>
         </Menu>
       </>
     );
-  }
+  };
 
-  ActionsColumnCell.propTypes = {
+  ActionsCell.propTypes = {
     row: PropTypes.object.isRequired,
-    onView: PropTypes.func.isRequired,
-    onEdit: PropTypes.func.isRequired,
-    onStatus: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-  };
-
-  function IdCell({ value }) {
-    return (
-      <MDTypography variant="caption" color={colors.textPrimary} fontWeight="medium">
-        {value}
-      </MDTypography>
-    );
-  }
-  IdCell.propTypes = {
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  };
-
-  function NameCell({ value }) {
-    return (
-      <MDTypography variant="caption" color={colors.textPrimary} fontWeight="medium">
-        {value || "-"}
-      </MDTypography>
-    );
-  }
-  NameCell.propTypes = {
-    value: PropTypes.string,
-  };
-
-  function DateCell({ value }) {
-    return (
-      <MDTypography variant="caption" color={colors.textPrimary}>
-        {value ? new Date(value).toLocaleString() : "-"}
-      </MDTypography>
-    );
-  }
-  DateCell.propTypes = {
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.instanceOf(Date)]),
-  };
-
-  function ImageCell({ value }) {
-    return renderUserImage(value);
-  }
-  ImageCell.propTypes = {
-    value: PropTypes.string,
-  };
-
-  function StatusCell({ value }) {
-    return getStatusChip(value);
-  }
-  StatusCell.propTypes = {
-    value: PropTypes.string.isRequired,
   };
 
   const columns = [
+    { Header: "ID", accessor: "id" },
+    { Header: "Username", accessor: "username" },
+    { Header: "Mobile", accessor: "mobile_number" },
+    { Header: "Email", accessor: "email" },
     {
-      Header: "ID",
-      accessor: "id",
-      width: "5%",
-      Cell: IdCell,
-    },
-    {
-      Header: "Username",
-      accessor: "username",
-      width: "15%",
-      Cell: NameCell,
-    },
-    {
-      Header: "Mobile",
-      accessor: "mobile_number",
-      width: "15%",
-      Cell: NameCell,
-    },
-    {
-      Header: "Email",
-      accessor: "email",
-      width: "20%",
-      Cell: NameCell,
+      Header: "Profile",
+      accessor: "profile_image",
+      Cell: ImageCell,
     },
     {
       Header: "Employee ID",
       accessor: "employeeid",
-      width: "15%",
-      Cell: NameCell,
-    },
-    {
-      Header: "Image",
-      accessor: "profile_image",
-      Cell: ImageCell,
-      width: "15%",
+      Cell: ({ value }) => value || "N/A",
     },
     {
       Header: "Status",
       accessor: "status",
-      Cell: StatusCell,
-      width: "10%",
+      Cell: ({ value }) => getStatusChip(value),
     },
     {
       Header: "Created At",
       accessor: "created_at",
-      Cell: DateCell,
-      width: "15%",
+      Cell: ({ value }) => new Date(value).toLocaleDateString(),
     },
     {
       Header: "Actions",
       accessor: "actions",
-      Cell: (cellProps) => (
-        <ActionsColumnCell
-          {...cellProps}
-          onView={handleViewUser}
-          onEdit={handleOpenEditDialog}
-          onStatus={handleOpenStatusDialog}
-          onDelete={handleOpenDeleteDialog}
-        />
-      ),
-      width: "20%",
+      Cell: ActionsCell,
     },
   ];
-
-  const filteredUsers = users.filter((user) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      (user.mobile_number && user.mobile_number.toLowerCase().includes(searchTermLower)) ||
-      (user.email && user.email.toLowerCase().includes(searchTermLower)) ||
-      (user.username && user.username.toLowerCase().includes(searchTermLower)) ||
-      (user.employeeid && user.employeeid.toLowerCase().includes(searchTermLower)) ||
-      user.id.toString().includes(searchTermLower)
-    );
-  });
-
-  const handleChangePage = (event, newPage) => {
-    setPagination({ ...pagination, currentPage: newPage });
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setPagination({
-      ...pagination,
-      rowsPerPage: parseInt(event.target.value, 10),
-      currentPage: 0,
-    });
-  };
 
   if (loading) {
     return (
       <DashboardLayout>
         <DashboardNavbar />
-        <MDBox
-          pt={6}
-          pb={3}
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          minHeight="60vh"
-        >
-          <CircularProgress
-            size={60}
-            thickness={4}
-            sx={{
-              color: colors.primary,
-              animationDuration: "800ms",
-            }}
-          />
+        <MDBox pt={6} pb={3} display="flex" justifyContent="center">
+          <CircularProgress />
         </MDBox>
         <Footer />
       </DashboardLayout>
@@ -827,7 +575,7 @@ function Users() {
                 px={2}
                 borderRadius="lg"
                 sx={{
-                  background: colors.gradientPrimary,
+                  background: "linear-gradient(87deg, #5e72e4 0, #825ee4 100%)",
                   boxShadow:
                     "0 4px 20px 0 rgba(0, 0, 0, 0.14), 0 7px 10px -5px rgba(94, 114, 228, 0.4)",
                 }}
@@ -840,7 +588,7 @@ function Users() {
                 >
                   <MDTypography
                     variant="h6"
-                    color={colors.white}
+                    color="#fff"
                     sx={{
                       fontWeight: "bold",
                       fontSize: "1.25rem",
@@ -849,72 +597,20 @@ function Users() {
                   >
                     Users Management
                   </MDTypography>
-                  <MDBox display="flex" gap={2} flexWrap="wrap" alignItems="center">
-                    <FormControl sx={{ minWidth: 120 }} size="small">
-                      <InputLabel
-                        sx={{
-                          color: colors.white,
-                          "&.Mui-focused": {
-                            color: colors.white,
-                          },
-                        }}
-                      >
-                        Status
-                      </InputLabel>
-                      <Select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        label="Status"
-                        sx={{
-                          width: 150,
-                          height: 36,
-                          color: colors.white,
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "rgba(255,255,255,0.5)",
-                          },
-                          "&:hover .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "rgba(255,255,255,0.75)",
-                          },
-                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                            borderColor: colors.white,
-                          },
-                          "& .MuiSvgIcon-root": {
-                            color: colors.white,
-                          },
-                        }}
-                        MenuProps={{
-                          PaperProps: {
-                            sx: {
-                              borderRadius: "8px",
-                              marginTop: "8px",
-                              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem value="all">All Status</MenuItem>
-                        <MenuItem value="active">Active</MenuItem>
-                        <MenuItem value="inactive">Inactive</MenuItem>
-                      </Select>
-                    </FormControl>
+                  <Box display="flex" gap={2}>
                     <TextField
-                      label="Search users..."
+                      label="Search users"
                       type="text"
-                      fullWidth
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          fetchUsers();
-                        }
-                      }}
                       sx={{
-                        width: { xs: "100%", sm: 200 },
+                        width: 300,
                         [theme.breakpoints.down("sm")]: {
+                          width: "100%",
                           marginBottom: 2,
                         },
                         "& .MuiInputBase-input": {
-                          color: colors.white,
+                          color: "#fff",
                           "&::placeholder": {
                             color: "rgba(255,255,255,0.7)",
                             opacity: 1,
@@ -931,7 +627,7 @@ function Users() {
                             borderColor: "rgba(255,255,255,0.75)",
                           },
                           "&.Mui-focused fieldset": {
-                            borderColor: colors.white,
+                            borderColor: "#fff",
                           },
                         },
                       }}
@@ -941,93 +637,75 @@ function Users() {
                     />
                     <Button
                       variant="contained"
-                      startIcon={<AddIcon />}
+                      startIcon={<PersonAddIcon />}
                       onClick={handleOpenCreateDialog}
                       sx={{
-                        background: colors.gradientSuccess,
+                        background: "linear-gradient(87deg, #2dce89 0, #2dcecc 100%)",
                         "&:hover": {
-                          background: "linear-gradient(87deg, #2dce89 0, #2dce89 100%)",
-                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                          background: "linear-gradient(87deg, #2dce89 0, #2dcecc 100%)",
                         },
-                        height: 36,
                         fontWeight: "bold",
                         textTransform: "none",
                         borderRadius: "6px",
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                         padding: "8px 16px",
-                        minWidth: "140px",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                       }}
                     >
-                      New User
+                      Add User
                     </Button>
-                  </MDBox>
+                  </Box>
                 </MDBox>
               </MDBox>
               <MDBox pt={3} px={2}>
-                <Paper
+                <DataTable
+                  table={{ columns, rows: filteredUsers }}
+                  isSorted={false}
+                  entriesPerPage={false}
+                  showTotalEntries={false}
+                  noEndBorder
                   sx={{
-                    width: "100%",
-                    overflow: "hidden",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <DataTable
-                    table={{
-                      columns,
-                      rows: filteredUsers.map((user) => ({
-                        ...user,
-                        created_at: user.created_at,
-                      })),
-                    }}
-                    isSorted={false}
-                    entriesPerPage={false}
-                    showTotalEntries={false}
-                    noEndBorder
-                    sx={{
-                      "& .MuiTableRow-root": {
-                        transition: "background-color 0.2s ease",
-                        "&:nth-of-type(odd)": {
-                          backgroundColor: "rgba(0,0,0,0.02)",
-                        },
-                        "&:hover": {
-                          backgroundColor: "rgba(94, 114, 228, 0.05)",
-                        },
+                    "& .MuiTableRow-root": {
+                      transition: "background-color 0.2s ease",
+                      "&:nth-of-type(odd)": {
+                        backgroundColor: "rgba(0,0,0,0.02)",
                       },
+                      "&:hover": {
+                        backgroundColor: "rgba(94, 114, 228, 0.05)",
+                      },
+                    },
+                    "& .MuiTableCell-root": {
+                      borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      padding: "12px 16px",
+                    },
+                    "& .MuiTableHead-root": {
                       "& .MuiTableCell-root": {
-                        borderBottom: "1px solid rgba(0,0,0,0.05)",
-                        padding: "12px 16px",
+                        backgroundColor: "#f7fafc",
+                        color: "#32325d",
+                        fontWeight: "bold",
+                        fontSize: "0.75rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        borderBottom: "2px solid rgba(0,0,0,0.05)",
                       },
-                      "& .MuiTableHead-root": {
-                        "& .MuiTableCell-root": {
-                          backgroundColor: colors.secondary,
-                          color: colors.textPrimary,
-                          fontWeight: "bold",
-                          fontSize: "0.75rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.5px",
-                          borderBottom: "2px solid rgba(0,0,0,0.05)",
-                        },
-                      },
-                    }}
-                  />
-                  <TablePagination
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                    component="div"
-                    count={pagination.total}
-                    rowsPerPage={pagination.rowsPerPage}
-                    page={pagination.currentPage}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    sx={{
-                      borderTop: "1px solid rgba(0,0,0,0.05)",
-                      "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-                        color: colors.textSecondary,
-                        fontSize: "0.875rem",
-                      },
-                    }}
-                  />
-                </Paper>
+                    },
+                  }}
+                />
+                <TablePagination
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  component="div"
+                  count={totalUsers}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  sx={{
+                    borderTop: "1px solid rgba(0,0,0,0.05)",
+                    "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+                      color: "#525f7f",
+                      fontSize: "0.875rem",
+                    },
+                  }}
+                />
               </MDBox>
             </Card>
           </Grid>
@@ -1040,6 +718,7 @@ function Users() {
         onClose={() => setOpenViewDialog(false)}
         maxWidth="md"
         fullWidth
+        scroll="paper"
         PaperProps={{
           sx: {
             borderRadius: "12px",
@@ -1049,8 +728,8 @@ function Users() {
       >
         <DialogTitle
           sx={{
-            background: colors.gradientInfo,
-            color: colors.white,
+            background: "linear-gradient(87deg, #5e72e4 0, #825ee4 100%)",
+            color: "#fff",
             padding: "16px 24px",
             fontWeight: "bold",
             display: "flex",
@@ -1058,13 +737,13 @@ function Users() {
             alignItems: "center",
           }}
         >
-          <MDTypography variant="h5" color={colors.white}>
+          <MDTypography variant="h5" color="#fff">
             User Details
           </MDTypography>
           <IconButton
             onClick={() => setOpenViewDialog(false)}
             sx={{
-              color: colors.white,
+              color: "#fff",
               "&:hover": {
                 backgroundColor: "rgba(255,255,255,0.1)",
               },
@@ -1073,163 +752,171 @@ function Users() {
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ backgroundColor: colors.secondary }}>
+        <DialogContent dividers sx={{ backgroundColor: "#f7fafc" }}>
           {viewUserData && (
-            <MDBox mt={3} mb={2}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <MDTypography variant="h6" color={colors.textPrimary} mb={1}>
-                    Basic Information
-                  </MDTypography>
-                  <Divider />
-                  <MDBox mt={2}>
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      ID
+            <MDBox>
+              <MDBox mb={3}>
+                <MDTypography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#5e72e4",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <CheckCircleIcon fontSize="small" />
+                  Basic Information
+                </MDTypography>
+                <Grid container spacing={2} mt={1}>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>ID:</strong> {viewUserData.id}
                     </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.id}
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Status:</strong> {getStatusChip(viewUserData.status)}
                     </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Username
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Created At:</strong>{" "}
+                      {new Date(viewUserData.created_at).toLocaleDateString()}
                     </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.username || "-"}
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Updated At:</strong>{" "}
+                      {new Date(viewUserData.updated_at).toLocaleDateString()}
                     </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Mobile Number
+                  </Grid>
+                  <Grid item xs={12}>
+                    <MDTypography>
+                      <strong>Profile Image:</strong>
                     </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.mobile_number}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Email
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.email}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Employee ID
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.employeeid || "-"}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Validation Key
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.validation_key}
-                    </MDTypography>
-                  </MDBox>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <MDTypography variant="h6" color={colors.textPrimary} mb={1}>
-                    Status & Dates
-                  </MDTypography>
-                  <Divider />
-                  <MDBox mt={2}>
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Status
-                    </MDTypography>
-                    <MDBox mb={2}>{getStatusChip(viewUserData.status)}</MDBox>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Starting Date
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.starting_date
-                        ? new Date(viewUserData.starting_date).toLocaleString()
-                        : "-"}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Ending Date
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.ending_date
-                        ? new Date(viewUserData.ending_date).toLocaleString()
-                        : "-"}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Payment Amount
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.paymentAmount || "-"}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Payment Mode
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.paymentMode || "-"}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Created At
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.created_at
-                        ? new Date(viewUserData.created_at).toLocaleString()
-                        : "-"}
-                    </MDTypography>
-
-                    <MDTypography variant="caption" color={colors.textSecondary} display="block">
-                      Updated At
-                    </MDTypography>
-                    <MDTypography variant="body1" color={colors.textPrimary} mb={2}>
-                      {viewUserData.updated_at
-                        ? new Date(viewUserData.updated_at).toLocaleString()
-                        : "-"}
-                    </MDTypography>
-                  </MDBox>
-                </Grid>
-                <Grid item xs={12}>
-                  <MDTypography variant="h6" color={colors.textPrimary} mb={1}>
-                    Profile Image
-                  </MDTypography>
-                  <Divider />
-                  <MDBox mt={2} display="flex" justifyContent="center">
                     {viewUserData.profile_image ? (
-                      <CardMedia
-                        component="img"
-                        image={`${BASE_URL}/uploads/${viewUserData.profile_image}`}
-                        sx={{
-                          maxWidth: 300,
-                          maxHeight: 300,
-                          borderRadius: "8px",
-                          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                        }}
-                        alt="User Profile"
+                      <Avatar
+                        src={`${BASE_URL}/uploads/${viewUserData.profile_image}`}
+                        variant="rounded"
+                        sx={{ width: 100, height: 100, mt: 1 }}
                       />
                     ) : (
-                      <MDTypography variant="body1" color={colors.textSecondary}>
-                        No profile image uploaded
-                      </MDTypography>
+                      <MDTypography variant="caption">No profile image available</MDTypography>
                     )}
-                  </MDBox>
+                  </Grid>
                 </Grid>
-              </Grid>
+              </MDBox>
+
+              <MDBox mb={3}>
+                <Divider sx={{ my: 2 }} />
+                <MDTypography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#5e72e4",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <PhoneIcon fontSize="small" />
+                  Contact Information
+                </MDTypography>
+                <Grid container spacing={2} mt={1}>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Username:</strong> {viewUserData.username || "N/A"}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Mobile Number:</strong> {viewUserData.mobile_number}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <MDTypography>
+                      <strong>Email:</strong> {viewUserData.email}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Validation Key:</strong> {viewUserData.validation_key}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Employee ID:</strong> {viewUserData.employeeid || "N/A"}
+                    </MDTypography>
+                  </Grid>
+                </Grid>
+              </MDBox>
+
+              <MDBox mb={3}>
+                <Divider sx={{ my: 2 }} />
+                <MDTypography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#5e72e4",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <CalendarTodayIcon fontSize="small" />
+                  Subscription Information
+                </MDTypography>
+                <Grid container spacing={2} mt={1}>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Starting Date:</strong>{" "}
+                      {viewUserData.starting_date
+                        ? new Date(viewUserData.starting_date).toLocaleDateString()
+                        : "N/A"}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Ending Date:</strong>{" "}
+                      {viewUserData.ending_date
+                        ? new Date(viewUserData.ending_date).toLocaleDateString()
+                        : "N/A"}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Payment Amount:</strong> {viewUserData.paymentAmount || "N/A"}
+                    </MDTypography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <MDTypography>
+                      <strong>Payment Mode:</strong> {viewUserData.paymentMode || "N/A"}
+                    </MDTypography>
+                  </Grid>
+                </Grid>
+              </MDBox>
             </MDBox>
           )}
         </DialogContent>
-        <DialogActions sx={{ backgroundColor: colors.secondary, padding: "16px 24px" }}>
+        <DialogActions sx={{ backgroundColor: "#f7fafc", padding: "16px 24px" }}>
           <Button
             onClick={() => setOpenViewDialog(false)}
+            variant="contained"
             sx={{
-              color: colors.textSecondary,
+              background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              "&:hover": {
+                background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              },
               fontWeight: "bold",
               textTransform: "none",
               borderRadius: "6px",
-              border: "1px solid rgba(0,0,0,0.1)",
               padding: "8px 24px",
-              "&:hover": {
-                backgroundColor: "rgba(0,0,0,0.02)",
-              },
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           >
             Close
@@ -1237,28 +924,7 @@ function Users() {
         </DialogActions>
       </Dialog>
 
-      {/* Edit User Dialog */}
-      {/* ...rest of the code remains unchanged... */}
-      {/* (No changes needed for Edit, Status, Delete, Create dialogs, Snackbar, Footer) */}
-
-      {/* Edit User Dialog */}
-      <Dialog
-        open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: "12px",
-            overflow: "hidden",
-          },
-        }}
-      >
-        {/* ...existing Edit User Dialog code... */}
-        {/* No changes needed here */}
-      </Dialog>
-
-      {/* Update Status Dialog */}
+      {/* Status Update Dialog */}
       <Dialog
         open={openStatusDialog}
         onClose={() => setOpenStatusDialog(false)}
@@ -1271,8 +937,95 @@ function Users() {
           },
         }}
       >
-        {/* ...existing Update Status Dialog code... */}
-        {/* No changes needed here */}
+        <DialogTitle
+          sx={{
+            background: "linear-gradient(87deg, #11cdef 0, #1171ef 100%)",
+            color: "#fff",
+            padding: "16px 24px",
+            fontWeight: "bold",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          Update User Status
+        </DialogTitle>
+        <DialogContent sx={{ backgroundColor: "#f7fafc" }}>
+          <MDBox mt={2} mb={3}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={statusData.status}
+                    onChange={(e) => setStatusData({ ...statusData, status: e.target.value })}
+                    label="Status"
+                    required
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              {statusData.status === "active" && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth margin="normal">
+                    <InputLabel>Duration</InputLabel>
+                    <Select
+                      value={statusData.duration}
+                      onChange={(e) => setStatusData({ ...statusData, duration: e.target.value })}
+                      label="Duration"
+                      required
+                    >
+                      {DURATION_OPTIONS.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+            </Grid>
+          </MDBox>
+        </DialogContent>
+        <DialogActions sx={{ backgroundColor: "#f7fafc", padding: "16px 24px" }}>
+          <Button
+            onClick={() => setOpenStatusDialog(false)}
+            sx={{
+              color: "#525f7f",
+              fontWeight: "bold",
+              textTransform: "none",
+              borderRadius: "6px",
+              border: "1px solid rgba(0,0,0,0.1)",
+              padding: "8px 24px",
+              "&:hover": {
+                backgroundColor: "rgba(0,0,0,0.02)",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpdateStatus}
+            color="error"
+            variant="contained"
+            sx={{
+              background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              "&:hover": {
+                background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              },
+              fontWeight: "bold",
+              textTransform: "none",
+              borderRadius: "6px",
+              padding: "8px 24px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              ml: 2,
+            }}
+          >
+            Update Status
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
@@ -1288,15 +1041,67 @@ function Users() {
           },
         }}
       >
-        {/* ...existing Delete Confirmation Dialog code... */}
-        {/* No changes needed here */}
+        <DialogTitle
+          sx={{
+            background: "linear-gradient(87deg, #fb6340 0, #fbb140 100%)",
+            color: "#fff",
+            padding: "16px 24px",
+            fontWeight: "bold",
+          }}
+        >
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent sx={{ backgroundColor: "#f7fafc" }}>
+          <MDBox mt={2} mb={3}>
+            <DialogContentText>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </DialogContentText>
+          </MDBox>
+        </DialogContent>
+        <DialogActions sx={{ backgroundColor: "#f7fafc", padding: "16px 24px" }}>
+          <Button
+            onClick={() => setOpenDeleteDialog(false)}
+            sx={{
+              color: "#525f7f",
+              fontWeight: "bold",
+              textTransform: "none",
+              borderRadius: "6px",
+              border: "1px solid rgba(0,0,0,0.1)",
+              padding: "8px 24px",
+              "&:hover": {
+                backgroundColor: "rgba(0,0,0,0.02)",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteUser}
+            color="error"
+            variant="contained"
+            sx={{
+              background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              "&:hover": {
+                background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              },
+              fontWeight: "bold",
+              textTransform: "none",
+              borderRadius: "6px",
+              padding: "8px 24px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              ml: 2,
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Create User Dialog */}
       <Dialog
         open={openCreateDialog}
         onClose={() => setOpenCreateDialog(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
         PaperProps={{
           sx: {
@@ -1305,8 +1110,193 @@ function Users() {
           },
         }}
       >
-        {/* ...existing Create User Dialog code... */}
-        {/* No changes needed here */}
+        <DialogTitle
+          sx={{
+            background: "linear-gradient(87deg, #2dce89 0, #2dcecc 100%)",
+            color: "#fff",
+            padding: "16px 24px",
+            fontWeight: "bold",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          Create New User
+        </DialogTitle>
+        <DialogContent sx={{ backgroundColor: "#f7fafc" }}>
+          <MDBox mt={2} mb={3}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Username"
+                  fullWidth
+                  margin="normal"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Mobile Number"
+                  fullWidth
+                  margin="normal"
+                  value={newUser.mobile_number}
+                  onChange={(e) => setNewUser({ ...newUser, mobile_number: e.target.value })}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Email"
+                  fullWidth
+                  margin="normal"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Password"
+                  fullWidth
+                  margin="normal"
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Validation Key"
+                  fullWidth
+                  margin="normal"
+                  value={newUser.validation_key}
+                  onChange={(e) => setNewUser({ ...newUser, validation_key: e.target.value })}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Employee ID</InputLabel>
+                  <Select
+                    value={newUser.employeeid}
+                    onChange={(e) => setNewUser({ ...newUser, employeeid: e.target.value })}
+                    label="Employee ID"
+                    disabled={loadingEmployees}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {employees.map((employee) => (
+                      <MenuItem key={employee.id} value={employee.employeeid}>
+                        {employee.employeeid} - {employee.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {loadingEmployees && (
+                    <Box display="flex" justifyContent="center" mt={1}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  )}
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <input
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  id="create-user-upload"
+                  type="file"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const filename = await handleFileUpload(file);
+                      if (filename) {
+                        setNewUser({ ...newUser, profile_image: filename });
+                      }
+                    }
+                  }}
+                />
+                <label htmlFor="create-user-upload">
+                  <Button
+                    variant="contained"
+                    component="span"
+                    startIcon={<CollectionsIcon />}
+                    sx={{ mr: 2 }}
+                  >
+                    Upload Profile Image
+                  </Button>
+                </label>
+                {uploading && <CircularProgress size={24} sx={{ ml: 2 }} />}
+                {newUser.profile_image && (
+                  <Box mt={2}>
+                    <MDTypography variant="caption">Image selected</MDTypography>
+                    <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
+                      <Avatar
+                        src={`${BASE_URL}/uploads/${newUser.profile_image}`}
+                        variant="rounded"
+                        sx={{ width: 80, height: 80 }}
+                      />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          backgroundColor: "rgba(0,0,0,0.5)",
+                          color: "white",
+                          "&:hover": {
+                            backgroundColor: "rgba(0,0,0,0.7)",
+                          },
+                        }}
+                        onClick={() => {
+                          setNewUser({ ...newUser, profile_image: "" });
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                )}
+              </Grid>
+            </Grid>
+          </MDBox>
+        </DialogContent>
+        <DialogActions sx={{ backgroundColor: "#f7fafc", padding: "16px 24px" }}>
+          <Button
+            onClick={() => setOpenCreateDialog(false)}
+            sx={{
+              color: "#525f7f",
+              fontWeight: "bold",
+              textTransform: "none",
+              borderRadius: "6px",
+              border: "1px solid rgba(0,0,0,0.1)",
+              padding: "8px 24px",
+              "&:hover": {
+                backgroundColor: "rgba(0,0,0,0.02)",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateUser}
+            color="error"
+            variant="contained"
+            sx={{
+              background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              "&:hover": {
+                background: "linear-gradient(87deg, #f5365c 0, #f5365c 100%)",
+              },
+              fontWeight: "bold",
+              textTransform: "none",
+              borderRadius: "6px",
+              padding: "8px 24px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              ml: 2,
+            }}
+          >
+            Create User
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Snackbar for notifications */}
@@ -1321,10 +1311,22 @@ function Users() {
           severity={snackbar.severity}
           sx={{
             width: "100%",
-            boxShadow: "0 4px 20px 0 rgba(0, 0, 0, 0.14), 0 7px 10px -5px rgba(0, 0, 0, 0.4)",
+            borderRadius: "8px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            "& .MuiAlert-icon": {
+              alignItems: "center",
+            },
+          }}
+          iconMapping={{
+            success: <CheckCircleIcon fontSize="inherit" />,
+            error: <CloseIcon fontSize="inherit" />,
+            warning: <CloseIcon fontSize="inherit" />,
+            info: <CloseIcon fontSize="inherit" />,
           }}
         >
-          {snackbar.message}
+          <MDTypography variant="body2" fontWeight="medium">
+            {snackbar.message}
+          </MDTypography>
         </Alert>
       </Snackbar>
 

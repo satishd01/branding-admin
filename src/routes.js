@@ -8,6 +8,7 @@ import BusinessCardCategory from "layouts/tables/BusinessCardCategory";
 import PostCategories from "layouts/tables/PostCategories";
 import Employees from "layouts/tables/employee";
 import Frames from "layouts/tables/Frames";
+import Post from "layouts/tables/Post";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -86,6 +87,15 @@ const allRoutes = [
     route: "/post-categories",
     component: <PostCategories />,
     permission: "postCategories",
+  },
+  {
+    type: "collapse",
+    name: "Posts",
+    key: "posts",
+    icon: <Icon fontSize="small">article</Icon>,
+    route: "/posts",
+    component: <Post />,
+    // permission: "posts", // optional
   },
   {
     type: "collapse",
