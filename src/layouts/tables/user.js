@@ -55,7 +55,7 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://branding.shellcode.website";
 
 const DURATION_OPTIONS = [
   { value: "1 month", label: "1 Month" },

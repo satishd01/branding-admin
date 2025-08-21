@@ -49,7 +49,7 @@ import {
   Download as DownloadIcon,
 } from "@mui/icons-material";
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://business-branding.synoventum.site";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://branding.shellcode.website";
 
 // Custom color palette with vibrant yet professional colors
 const colors = {

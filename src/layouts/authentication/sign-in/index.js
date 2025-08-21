@@ -30,7 +30,7 @@ function SignIn() {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
-  const BASE_URL = "https://business-branding.synoventum.site";
+  const BASE_URL = "https://branding.shellcode.website";
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
   const handleToggleRole = () => setIsAdmin(!isAdmin);

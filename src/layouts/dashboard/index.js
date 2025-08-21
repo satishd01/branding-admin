@@ -42,7 +42,7 @@ function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         const response = await fetch(
-          "https://business-branding.synoventum.site/api/admin/dashboard",
+          "https://branding.shellcode.website/api/admin/dashboard",
           {
             method: "GET",
             headers: {
